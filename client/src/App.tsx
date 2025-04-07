@@ -8,6 +8,7 @@ import Sensors from "@/pages/Sensors";
 import Analytics from "@/pages/Analytics";
 import Alerts from "@/pages/Alerts";
 import Settings from "@/pages/Settings";
+import Register from "@/pages/Register";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
@@ -55,6 +56,19 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
+  // Determina si la ruta es /register para no mostrar el AppLayout en la página de registro
+  const [location] = useLocation();
+  
+  // Si estamos en la página de registro, no usamos el AppLayout
+  if (location === "/register") {
+    return (
+      <Switch>
+        <Route path="/register" component={Register} />
+      </Switch>
+    );
+  }
+
+  // Para las demás rutas, usamos el AppLayout normal
   return (
     <AppLayout>
       <Switch>

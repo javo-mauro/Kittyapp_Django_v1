@@ -123,3 +123,40 @@ export type SystemInfo = {
   mqttVersion: string;
   lastUpdate: string;
 };
+
+// Definición de tipos para dueños de mascotas y mascotas
+export type PetOwner = {
+  id: number;
+  name: string;
+  paternalLastName: string;
+  maternalLastName: string | null;
+  address: string;
+  birthDate: Date;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type InsertPetOwner = Omit<PetOwner, "id" | "createdAt" | "updatedAt">;
+
+export type Pet = {
+  id: number;
+  ownerId: number;
+  name: string;
+  chipNumber: string;
+  breed: string;
+  species: string;
+  acquisitionDate: Date;
+  birthDate: Date | null;
+  origin: string; // compra, adoptado, etc
+  background: string | null; // bueno, malo, de la calle
+  hasVaccinations: boolean;
+  hasDiseases: boolean;
+  diseaseNotes: string | null;
+  lastVetVisit: Date | null;
+  kittyPawDeviceId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type InsertPet = Omit<Pet, "id" | "createdAt" | "updatedAt">;

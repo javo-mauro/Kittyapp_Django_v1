@@ -180,6 +180,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pet owner endpoints
+  app.get('/api/pet-owners', async (req: Request, res: Response) => {
+    try {
+      const owners = await storage.getPetOwners();
+      res.json(owners);
+    } catch (error) {
+      console.error('Error fetching pet owners:', error);
+      res.status(500).json({ message: 'Error al obtener los dueños de mascotas' });
+    }
+  });
+
+  app.get('/api/pet-owners/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const owner = await storage.getPetOwner(id);
+      
+      if (!owner) {
+        return res.status(404).json({ message: 'Dueño no encontrado' });
+      }
+      
+      res.json(owner);
+    } catch (error) {
+      console.error('Error fetching pet owner:', error);
+      res.status(500).json({ message: 'Error al obtener el dueño de mascota' });
+    }
+  });
+
+  app.post('/api/pet-owners', async (req: Request, res: Response) => {
+    try {
+      const owner = req.body;
+      const newOwner = await storage.createPetOwner(owner);
+      res.status(201).json(newOwner);
+    } catch (error) {
+      console.error('Error creating pet owner:', error);
+      res.status(500).json({ message: 'Error al crear el dueño de mascota' });
+    }
+  });
+
+  app.put('/api/pet-owners/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const owner = req.body;
+      const updatedOwner = await storage.updatePetOwner(id, owner);
+      res.json(updatedOwner);
+    } catch (error) {
+      console.error('Error updating pet owner:', error);
+      res.status(500).json({ message: 'Error al actualizar el dueño de mascota' });
+    }
+  });
+
+  app.delete('/api/pet-owners/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await storage.deletePetOwner(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: 'Dueño no encontrado' });
+      }
+      
+      res.json({ message: 'Dueño eliminado con éxito' });
+    } catch (error) {
+      console.error('Error deleting pet owner:', error);
+      res.status(500).json({ message: 'Error al eliminar el dueño de mascota' });
+    }
+  });
+
+  // Pet endpoints
+  app.get('/api/pets', async (req: Request, res: Response) => {
+    try {
+      const pets = await storage.getPets();
+      res.json(pets);
+    } catch (error) {
+      console.error('Error fetching pets:', error);
+      res.status(500).json({ message: 'Error al obtener las mascotas' });
+    }
+  });
+
+  app.get('/api/pets/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const pet = await storage.getPet(id);
+      
+      if (!pet) {
+        return res.status(404).json({ message: 'Mascota no encontrada' });
+      }
+      
+      res.json(pet);
+    } catch (error) {
+      console.error('Error fetching pet:', error);
+      res.status(500).json({ message: 'Error al obtener la mascota' });
+    }
+  });
+
+  app.get('/api/pet-owners/:ownerId/pets', async (req: Request, res: Response) => {
+    try {
+      const ownerId = parseInt(req.params.ownerId);
+      const pets = await storage.getPetsByOwnerId(ownerId);
+      res.json(pets);
+    } catch (error) {
+      console.error('Error fetching owner pets:', error);
+      res.status(500).json({ message: 'Error al obtener las mascotas del dueño' });
+    }
+  });
+
+  app.post('/api/pets', async (req: Request, res: Response) => {
+    try {
+      const pet = req.body;
+      const newPet = await storage.createPet(pet);
+      res.status(201).json(newPet);
+    } catch (error) {
+      console.error('Error creating pet:', error);
+      res.status(500).json({ message: 'Error al crear la mascota' });
+    }
+  });
+
+  app.put('/api/pets/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const pet = req.body;
+      const updatedPet = await storage.updatePet(id, pet);
+      res.json(updatedPet);
+    } catch (error) {
+      console.error('Error updating pet:', error);
+      res.status(500).json({ message: 'Error al actualizar la mascota' });
+    }
+  });
+
+  app.delete('/api/pets/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await storage.deletePet(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: 'Mascota no encontrada' });
+      }
+      
+      res.json({ message: 'Mascota eliminada con éxito' });
+    } catch (error) {
+      console.error('Error deleting pet:', error);
+      res.status(500).json({ message: 'Error al eliminar la mascota' });
+    }
+  });
+
+  app.get('/api/devices/:deviceId/pet', async (req: Request, res: Response) => {
+    try {
+      const deviceId = req.params.deviceId;
+      const pet = await storage.getPetByKittyPawDeviceId(deviceId);
+      
+      if (!pet) {
+        return res.status(404).json({ message: 'No se encontró mascota asociada a este dispositivo' });
+      }
+      
+      res.json(pet);
+    } catch (error) {
+      console.error('Error fetching pet by device:', error);
+      res.status(500).json({ message: 'Error al obtener la mascota por dispositivo' });
+    }
+  });
+
   // Initialize the MQTT client
   await mqttClient.loadAndConnect();
 

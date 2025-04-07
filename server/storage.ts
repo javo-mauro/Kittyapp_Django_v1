@@ -12,7 +12,11 @@ import {
   type MqttConnection,
   type InsertMqttConnection,
   type SensorReading,
-  type SystemMetrics
+  type SystemMetrics,
+  type PetOwner,
+  type InsertPetOwner,
+  type Pet,
+  type InsertPet
 } from "@shared/schema";
 
 export interface IStorage {
@@ -44,6 +48,24 @@ export interface IStorage {
 
   // System operations
   getSystemMetrics(): Promise<SystemMetrics>;
+  
+  // Pet owner operations
+  getPetOwners(): Promise<PetOwner[]>;
+  getPetOwner(id: number): Promise<PetOwner | undefined>;
+  getPetOwnerByEmail(email: string): Promise<PetOwner | undefined>;
+  createPetOwner(owner: InsertPetOwner): Promise<PetOwner>;
+  updatePetOwner(id: number, owner: Partial<InsertPetOwner>): Promise<PetOwner>;
+  deletePetOwner(id: number): Promise<boolean>;
+  
+  // Pet operations
+  getPets(): Promise<Pet[]>;
+  getPetsByOwnerId(ownerId: number): Promise<Pet[]>;
+  getPet(id: number): Promise<Pet | undefined>;
+  getPetByChipNumber(chipNumber: string): Promise<Pet | undefined>;
+  createPet(pet: InsertPet): Promise<Pet>;
+  updatePet(id: number, pet: Partial<InsertPet>): Promise<Pet>;
+  deletePet(id: number): Promise<boolean>;
+  getPetByKittyPawDeviceId(deviceId: string): Promise<Pet | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -51,20 +73,28 @@ export class MemStorage implements IStorage {
   private devices: Map<number, Device>;
   private sensorData: SensorData[];
   private mqttConnections: Map<number, MqttConnection>;
+  private petOwners: Map<number, PetOwner>;
+  private pets: Map<number, Pet>;
   currentUserId: number;
   currentDeviceId: number;
   currentSensorDataId: number;
   currentMqttConnectionId: number;
+  currentPetOwnerId: number;
+  currentPetId: number;
 
   constructor() {
     this.users = new Map();
     this.devices = new Map();
     this.sensorData = [];
     this.mqttConnections = new Map();
+    this.petOwners = new Map();
+    this.pets = new Map();
     this.currentUserId = 1;
     this.currentDeviceId = 1;
     this.currentSensorDataId = 1;
     this.currentMqttConnectionId = 1;
+    this.currentPetOwnerId = 1;
+    this.currentPetId = 1;
 
     // Add default admin user
     this.createUser({
@@ -309,6 +339,119 @@ export class MemStorage implements IStorage {
       alerts,
       lastUpdate: lastUpdate.toISOString()
     };
+  }
+
+  // Pet owner operations
+  async getPetOwners(): Promise<PetOwner[]> {
+    return Array.from(this.petOwners.values());
+  }
+
+  async getPetOwner(id: number): Promise<PetOwner | undefined> {
+    return this.petOwners.get(id);
+  }
+
+  async getPetOwnerByEmail(email: string): Promise<PetOwner | undefined> {
+    return Array.from(this.petOwners.values()).find(
+      (owner) => owner.email === email
+    );
+  }
+
+  async createPetOwner(owner: InsertPetOwner): Promise<PetOwner> {
+    const id = this.currentPetOwnerId++;
+    const now = new Date();
+    const petOwner: PetOwner = {
+      ...owner,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.petOwners.set(id, petOwner);
+    return petOwner;
+  }
+
+  async updatePetOwner(id: number, owner: Partial<InsertPetOwner>): Promise<PetOwner> {
+    const existingOwner = this.petOwners.get(id);
+    if (!existingOwner) {
+      throw new Error(`Pet owner with ID ${id} not found`);
+    }
+
+    const updatedOwner: PetOwner = {
+      ...existingOwner,
+      ...owner,
+      id,
+      updatedAt: new Date()
+    };
+    this.petOwners.set(id, updatedOwner);
+    return updatedOwner;
+  }
+
+  async deletePetOwner(id: number): Promise<boolean> {
+    // Primero eliminar todas las mascotas asociadas a este dueño
+    const ownerPets = await this.getPetsByOwnerId(id);
+    for (const pet of ownerPets) {
+      await this.deletePet(pet.id);
+    }
+    return this.petOwners.delete(id);
+  }
+
+  // Pet operations
+  async getPets(): Promise<Pet[]> {
+    return Array.from(this.pets.values());
+  }
+
+  async getPetsByOwnerId(ownerId: number): Promise<Pet[]> {
+    return Array.from(this.pets.values()).filter(
+      (pet) => pet.ownerId === ownerId
+    );
+  }
+
+  async getPet(id: number): Promise<Pet | undefined> {
+    return this.pets.get(id);
+  }
+
+  async getPetByChipNumber(chipNumber: string): Promise<Pet | undefined> {
+    return Array.from(this.pets.values()).find(
+      (pet) => pet.chipNumber === chipNumber
+    );
+  }
+
+  async createPet(pet: InsertPet): Promise<Pet> {
+    const id = this.currentPetId++;
+    const now = new Date();
+    const newPet: Pet = {
+      ...pet,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.pets.set(id, newPet);
+    return newPet;
+  }
+
+  async updatePet(id: number, pet: Partial<InsertPet>): Promise<Pet> {
+    const existingPet = this.pets.get(id);
+    if (!existingPet) {
+      throw new Error(`Pet with ID ${id} not found`);
+    }
+
+    const updatedPet: Pet = {
+      ...existingPet,
+      ...pet,
+      id,
+      updatedAt: new Date()
+    };
+    this.pets.set(id, updatedPet);
+    return updatedPet;
+  }
+
+  async deletePet(id: number): Promise<boolean> {
+    return this.pets.delete(id);
+  }
+
+  async getPetByKittyPawDeviceId(deviceId: string): Promise<Pet | undefined> {
+    return Array.from(this.pets.values()).find(
+      (pet) => pet.kittyPawDeviceId === deviceId
+    );
   }
 }
 
