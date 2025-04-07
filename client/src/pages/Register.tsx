@@ -99,6 +99,8 @@ export default function Register() {
         birthDate: data.birthDate.toISOString()
       };
 
+      console.log("Enviando datos del dueño:", formattedData);
+
       const result = await apiRequest<{ id: number }>("/api/pet-owners", {
         method: "POST",
         headers: {
@@ -107,13 +109,22 @@ export default function Register() {
         body: JSON.stringify(formattedData)
       });
 
-      setOwnerId(result.id);
-      toast({
-        title: "Registro exitoso",
-        description: "El dueño se ha registrado correctamente. Ahora puede registrar a su mascota.",
-      });
-      // Cambiar a la pestaña de mascota
-      setActiveTab("pet");
+      console.log("Respuesta del servidor:", result);
+
+      if (result && result.id) {
+        setOwnerId(result.id);
+        // También actualizar el valor por defecto en el formulario de mascota
+        petForm.setValue("ownerId", result.id);
+        
+        toast({
+          title: "Registro exitoso",
+          description: "El dueño se ha registrado correctamente. Ahora puede registrar a su mascota.",
+        });
+        // Cambiar a la pestaña de mascota
+        setActiveTab("pet");
+      } else {
+        throw new Error("No se recibió un ID válido del servidor");
+      }
     } catch (error) {
       let message = "Ocurrió un error al registrar el dueño";
       if (error instanceof Error) {
@@ -134,16 +145,20 @@ export default function Register() {
         throw new Error("No se ha seleccionado un dueño. Por favor registre primero al dueño.");
       }
 
-      // Convertir las fechas a formato ISO string
+      console.log("Datos de mascota a enviar:", { ...data, ownerId });
+
+      // Convertir las fechas a formato ISO string y asegurarnos de que ownerId está establecido
       const formattedData = {
         ...data,
-        ownerId,
+        ownerId: ownerId, // Usar explícitamente el ownerId del estado
         acquisitionDate: data.acquisitionDate.toISOString(),
         birthDate: data.birthDate ? data.birthDate.toISOString() : undefined,
         lastVetVisit: data.lastVetVisit ? data.lastVetVisit.toISOString() : undefined
       };
 
-      await apiRequest("/api/pets", {
+      console.log("Enviando datos de mascota:", formattedData);
+
+      const response = await apiRequest("/api/pets", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -151,12 +166,28 @@ export default function Register() {
         body: JSON.stringify(formattedData)
       });
 
+      console.log("Respuesta del servidor:", response);
+
       toast({
         title: "Registro exitoso",
         description: "La mascota se ha registrado correctamente.",
       });
-      // Resetear formulario
-      petForm.reset();
+      
+      // Resetear solo ciertos campos del formulario manteniendo el ownerId
+      const currentOwnerId = ownerId;
+      petForm.reset({
+        name: "",
+        chipNumber: "",
+        breed: "",
+        species: "",
+        origin: "",
+        background: "",
+        hasVaccinations: false,
+        hasDiseases: false,
+        diseaseNotes: "",
+        kittyPawDeviceId: "",
+        ownerId: currentOwnerId // Mantener el mismo dueño para poder registrar múltiples mascotas
+      });
     } catch (error) {
       let message = "Ocurrió un error al registrar la mascota";
       if (error instanceof Error) {
