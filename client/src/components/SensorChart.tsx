@@ -23,8 +23,12 @@ export default function SensorChart({
   const chartInstance = useRef<Chart | null>(null);
   const { latestReadings } = useWebSocket();
   
-  // Mantener un historial de lecturas por dispositivo
-  const [readingsHistory, setReadingsHistory] = useState<Record<string, any[]>>({});
+  // Mantener un historial de lecturas por dispositivo con persistencia
+  const [readingsHistory, setReadingsHistory] = useState<Record<string, any[]>>(() => {
+    // Intentar cargar el historial desde localStorage
+    const savedHistory = localStorage.getItem(`sensor_history_${sensorType}`);
+    return savedHistory ? JSON.parse(savedHistory) : {};
+  });
   
   // Filter readings by sensor type
   const readings = latestReadings.filter(reading => reading.sensorType === sensorType);
@@ -154,7 +158,10 @@ export default function SensorChart({
     });
     
     setReadingsHistory(updatedHistory);
-  }, [latestReadings]);
+    
+    // Guardar el historial actualizado en localStorage
+    localStorage.setItem(`sensor_history_${sensorType}`, JSON.stringify(updatedHistory));
+  }, [latestReadings, sensorType]);
   
   // Actualizar el gráfico con los datos del historial
   useEffect(() => {

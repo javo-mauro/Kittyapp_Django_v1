@@ -5,8 +5,23 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, RefreshCw } from "lucide-react";
+import { 
+  CalendarIcon, 
+  RefreshCw, 
+  PlusCircle as PlusCircleIcon, 
+  Users as UsersIcon,
+  PawPrint 
+} from "lucide-react";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -57,6 +72,17 @@ export default function Register() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("owner");
   const [ownerId, setOwnerId] = useState<number | null>(null);
+  const [currentTab, setCurrentTab] = useState('petOwner');
+  
+  // Estados para los diálogos
+  const [showOwnersDialog, setShowOwnersDialog] = useState(false);
+  const [showPetsDialog, setShowPetsDialog] = useState(false);
+  const [showOwnerDetailsDialog, setShowOwnerDetailsDialog] = useState(false);
+  const [showPetDetailsDialog, setShowPetDetailsDialog] = useState(false);
+  
+  // Estados para los elementos seleccionados
+  const [selectedOwnerId, setSelectedOwnerId] = useState<number | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   
   // Consultas para obtener propietarios y mascotas
   const { data: petOwners = [], isLoading: isLoadingOwners, refetch: refetchOwners } = useQuery<PetOwner[]>({
@@ -834,6 +860,50 @@ export default function Register() {
         </Tabs>
       </div>
       
+      {/* Sección de registro rápido y botones de navegación */}
+      <div className="mt-10 grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl font-bold text-[#F87A6D]">
+              Acciones Rápidas
+            </CardTitle>
+            <CardDescription>
+              Registros y visualización de información
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button 
+                className="flex-1 bg-[#F87A6D] hover:bg-[#E56A5D]"
+                onClick={() => {
+                  setCurrentTab('petOwner');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                <PlusCircleIcon className="h-4 w-4 mr-2" />
+                Añadir Nuevo Registro
+              </Button>
+              <Button 
+                className="flex-1" 
+                variant="outline"
+                onClick={() => setShowOwnersDialog(true)}
+              >
+                <UsersIcon className="h-4 w-4 mr-2" />
+                Ver Propietarios
+              </Button>
+              <Button 
+                className="flex-1" 
+                variant="outline"
+                onClick={() => setShowPetsDialog(true)}
+              >
+                <PawPrint className="h-4 w-4 mr-2" />
+                Ver Mascotas
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
       {/* Sección de listados de datos registrados */}
       <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
@@ -873,6 +943,18 @@ export default function Register() {
                       <div>📧 {owner.email}</div>
                       <div>📍 {owner.address}</div>
                       <div>🗓️ {new Date(owner.birthDate).toLocaleDateString()}</div>
+                    </div>
+                    <div className="mt-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedOwnerId(owner.id);
+                          setShowOwnerDetailsDialog(true);
+                        }}
+                      >
+                        Ver detalles
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -925,6 +1007,18 @@ export default function Register() {
                         {pet.hasDiseases ? '⚠️ Con enfermedades' : '✅ Saludable'}
                       </div>
                     </div>
+                    <div className="mt-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPetId(pet.id);
+                          setShowPetDetailsDialog(true);
+                        }}
+                      >
+                        Ver detalles
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -932,6 +1026,285 @@ export default function Register() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Diálogos para mostrar detalles */}
+      <Dialog open={showOwnersDialog} onOpenChange={setShowOwnersDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[#F87A6D]">Propietarios Registrados</DialogTitle>
+            <DialogDescription>
+              Listado completo de propietarios en el sistema
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {isLoadingOwners ? (
+              <div className="flex justify-center py-4">
+                <span className="animate-spin mr-2">⏳</span> Cargando...
+              </div>
+            ) : !Array.isArray(petOwners) || petOwners.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                No hay propietarios registrados
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Array.isArray(petOwners) && petOwners.map((owner) => (
+                  <div key={owner.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="font-medium">{owner.name} {owner.paternalLastName} {owner.maternalLastName}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      <div>📧 {owner.email}</div>
+                      <div>📍 {owner.address}</div>
+                      <div>🗓️ {new Date(owner.birthDate).toLocaleDateString()}</div>
+                    </div>
+                    <div className="mt-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedOwnerId(owner.id);
+                          setShowOwnerDetailsDialog(true);
+                          setShowOwnersDialog(false);
+                        }}
+                      >
+                        Ver detalles
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowOwnersDialog(false)}
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPetsDialog} onOpenChange={setShowPetsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[#F87A6D]">Mascotas Registradas</DialogTitle>
+            <DialogDescription>
+              Listado completo de mascotas en el sistema
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {isLoadingPets ? (
+              <div className="flex justify-center py-4">
+                <span className="animate-spin mr-2">⏳</span> Cargando...
+              </div>
+            ) : !Array.isArray(pets) || pets.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                No hay mascotas registradas
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Array.isArray(pets) && pets.map((pet) => (
+                  <div key={pet.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="font-medium">{pet.name} - {pet.species} {pet.breed}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      <div>🔖 Microchip: {pet.chipNumber}</div>
+                      <div>🌟 Origen: {pet.origin}</div>
+                      {pet.kittyPawDeviceId && (
+                        <div>📟 Dispositivo: {pet.kittyPawDeviceId}</div>
+                      )}
+                      <div>
+                        {pet.hasVaccinations ? '✅ Vacunado' : '❌ Sin vacunas'} | 
+                        {pet.hasDiseases ? '⚠️ Con enfermedades' : '✅ Saludable'}
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPetId(pet.id);
+                          setShowPetDetailsDialog(true);
+                          setShowPetsDialog(false);
+                        }}
+                      >
+                        Ver detalles
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPetsDialog(false)}
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showOwnerDetailsDialog} onOpenChange={setShowOwnerDetailsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[#F87A6D]">Detalle del Propietario</DialogTitle>
+          </DialogHeader>
+          {selectedOwnerId && (
+            <>
+              {petOwners.filter(owner => owner.id === selectedOwnerId).map(owner => (
+                <div key={owner.id} className="space-y-4 py-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-semibold text-sm">Nombre completo</h3>
+                      <p>{owner.name} {owner.paternalLastName} {owner.maternalLastName}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Correo electrónico</h3>
+                      <p>{owner.email}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Dirección</h3>
+                      <p>{owner.address}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Fecha de nacimiento</h3>
+                      <p>{new Date(owner.birthDate).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h3 className="font-semibold text-sm mb-2">Mascotas del propietario</h3>
+                    <div className="space-y-2">
+                      {pets.filter(pet => pet.ownerId === owner.id).length > 0 ? (
+                        pets.filter(pet => pet.ownerId === owner.id).map(pet => (
+                          <div key={pet.id} className="border rounded-lg p-3 bg-gray-50">
+                            <div className="font-medium">{pet.name} - {pet.species} {pet.breed}</div>
+                            {pet.kittyPawDeviceId && (
+                              <div className="text-sm text-muted-foreground">📟 Dispositivo: {pet.kittyPawDeviceId}</div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Este propietario no tiene mascotas registradas</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowOwnerDetailsDialog(false)}
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPetDetailsDialog} onOpenChange={setShowPetDetailsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[#F87A6D]">Detalle de la Mascota</DialogTitle>
+          </DialogHeader>
+          {selectedPetId && (
+            <>
+              {pets.filter(pet => pet.id === selectedPetId).map(pet => (
+                <div key={pet.id} className="space-y-4 py-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="font-semibold text-sm">Nombre</h3>
+                      <p>{pet.name}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Especie</h3>
+                      <p>{pet.species}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Raza</h3>
+                      <p>{pet.breed}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Número de microchip</h3>
+                      <p>{pet.chipNumber}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Fecha de adquisición</h3>
+                      <p>{new Date(pet.acquisitionDate).toLocaleDateString()}</p>
+                    </div>
+                    {pet.birthDate && (
+                      <div>
+                        <h3 className="font-semibold text-sm">Fecha de nacimiento</h3>
+                        <p>{new Date(pet.birthDate).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-semibold text-sm">Origen</h3>
+                      <p>{pet.origin}</p>
+                    </div>
+                    {pet.background && (
+                      <div>
+                        <h3 className="font-semibold text-sm">Antecedentes</h3>
+                        <p>{pet.background}</p>
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-semibold text-sm">Estado de vacunación</h3>
+                      <p>{pet.hasVaccinations ? '✅ Vacunado' : '❌ Sin vacunas'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Estado de salud</h3>
+                      <p>{pet.hasDiseases ? '⚠️ Con enfermedades' : '✅ Saludable'}</p>
+                    </div>
+                    {pet.hasDiseases && pet.diseaseNotes && (
+                      <div className="col-span-2">
+                        <h3 className="font-semibold text-sm">Notas sobre enfermedades</h3>
+                        <p>{pet.diseaseNotes}</p>
+                      </div>
+                    )}
+                    {pet.lastVetVisit && (
+                      <div>
+                        <h3 className="font-semibold text-sm">Última visita al veterinario</h3>
+                        <p>{new Date(pet.lastVetVisit).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    {pet.kittyPawDeviceId && (
+                      <div>
+                        <h3 className="font-semibold text-sm">Dispositivo KittyPaw</h3>
+                        <p>{pet.kittyPawDeviceId}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6">
+                    <h3 className="font-semibold text-sm mb-2">Propietario</h3>
+                    <div className="space-y-2">
+                      {petOwners.filter(owner => owner.id === pet.ownerId).map(owner => (
+                        <div key={owner.id} className="border rounded-lg p-3 bg-gray-50">
+                          <div className="font-medium">{owner.name} {owner.paternalLastName} {owner.maternalLastName}</div>
+                          <div className="text-sm text-muted-foreground">📧 {owner.email}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPetDetailsDialog(false)}
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

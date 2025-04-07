@@ -9,6 +9,7 @@ import Analytics from "@/pages/Analytics";
 import Alerts from "@/pages/Alerts";
 import Settings from "@/pages/Settings";
 import Register from "@/pages/Register";
+import Login from "@/pages/Login";
 import Devices from "@/pages/Devices";
 import Users from "@/pages/Users";
 import Header from "@/components/Header";
@@ -58,13 +59,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  // Determina si la ruta es /register para no mostrar el AppLayout en la página de registro
+  // Determina si la ruta es /login o /register para no mostrar el AppLayout en estas páginas
   const [location] = useLocation();
   
-  // Si estamos en la página de registro, no usamos el AppLayout
-  if (location === "/register") {
+  // Si estamos en la página de registro o login, no usamos el AppLayout
+  if (location === "/register" || location === "/" || location === "/login") {
     return (
       <Switch>
+        <Route path="/" component={Login} />
+        <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
       </Switch>
     );
@@ -74,7 +77,7 @@ function Router() {
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
         <Route path="/devices" component={Devices} />
         <Route path="/sensors" component={Sensors} />
         <Route path="/analytics" component={Analytics} />
