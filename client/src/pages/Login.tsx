@@ -60,8 +60,9 @@ export default function Login() {
       //   body: JSON.stringify(data),
       // });
       
-      // Por ahora, simulamos un login exitoso para admin/admin123
-      if (data.username === 'admin' && data.password === 'admin123') {
+      // Por ahora, permitimos el login con admin/admin123 o jdayne/jdayne21
+      if ((data.username === 'admin' && data.password === 'admin123') || 
+          (data.username === 'jdayne' && data.password === 'jdayne21')) {
         toast({
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de nuevo!",
