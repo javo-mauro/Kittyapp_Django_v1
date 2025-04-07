@@ -24,7 +24,11 @@ const petOwnerFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
   paternalLastName: z.string().min(2, { message: "El apellido paterno debe tener al menos 2 caracteres" }),
   maternalLastName: z.string().optional(),
-  address: z.string().min(5, { message: "La dirección debe tener al menos 5 caracteres" }),
+  city: z.string().min(2, { message: "La ciudad debe tener al menos 2 caracteres" }),
+  district: z.string().min(2, { message: "La comuna debe tener al menos 2 caracteres" }),
+  street: z.string().min(2, { message: "La calle debe tener al menos 2 caracteres" }),
+  number: z.string().min(1, { message: "El número debe tener al menos 1 caracter" }),
+  addressDetails: z.string().optional(),
   birthDate: z.date({ required_error: "Se requiere fecha de nacimiento" }),
   email: z.string().email({ message: "Correo electrónico inválido" })
 });
@@ -59,7 +63,11 @@ export default function Register() {
       name: "",
       paternalLastName: "",
       maternalLastName: "",
-      address: "",
+      city: "",
+      district: "",
+      street: "",
+      number: "",
+      addressDetails: "",
       email: ""
     }
   });
@@ -184,8 +192,35 @@ export default function Register() {
               <CardHeader>
                 <CardTitle>Registro de Dueño</CardTitle>
                 <CardDescription>
-                  Por favor ingresa los datos del dueño de la mascota.
+                  Por favor ingresa los datos del dueño de la mascota o inicia sesión con Google.
                 </CardDescription>
+                <div className="mt-3 flex justify-center">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={() => toast({
+                      title: "Autenticación con Google",
+                      description: "Esta funcionalidad será implementada próximamente.",
+                    })}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                      <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+                      <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+                      <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                    </svg>
+                    <span>Ingresar con Google</span>
+                  </Button>
+                </div>
+                <div className="relative mt-3 mb-1">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-300"></span>
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-white px-2 text-gray-500">O regístrate manualmente</span>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <Form {...petOwnerForm}>
@@ -249,12 +284,68 @@ export default function Register() {
 
                       <FormField
                         control={petOwnerForm.control}
-                        name="address"
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ciudad</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ciudad" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={petOwnerForm.control}
+                        name="district"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Comuna</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Comuna" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={petOwnerForm.control}
+                        name="street"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Calle</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Nombre de la calle" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={petOwnerForm.control}
+                        name="number"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Número" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={petOwnerForm.control}
+                        name="addressDetails"
                         render={({ field }) => (
                           <FormItem className="col-span-2">
-                            <FormLabel>Dirección</FormLabel>
+                            <FormLabel>Detalles adicionales</FormLabel>
                             <FormControl>
-                              <Input placeholder="Dirección completa" {...field} />
+                              <Input placeholder="Apartamento, piso, etc." {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -348,9 +439,19 @@ export default function Register() {
                             <FormControl>
                               <Input placeholder="982 000362934354" {...field} />
                             </FormControl>
-                            <FormDescription>
-                              El número de microchip debe ser de 15 dígitos según norma ISO 11784
-                            </FormDescription>
+                            <div className="relative">
+                              <FormDescription className="flex items-center gap-1">
+                                <span>El número de microchip debe ser de 15 dígitos según norma ISO 11784</span>
+                                <div className="relative inline-block group">
+                                  <span className="material-icons cursor-help text-sm text-neutral-400">info</span>
+                                  <div className="hidden group-hover:block absolute z-50 w-80 p-4 bg-white border rounded-lg shadow-lg left-0 mt-2">
+                                    <p className="text-sm text-gray-700">
+                                      Un número de microchip conforme a la norma ISO 11784 en Chile consta de 15 dígitos y sigue una estructura específica. Por ejemplo: 982 000362934354
+                                    </p>
+                                  </div>
+                                </div>
+                              </FormDescription>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}

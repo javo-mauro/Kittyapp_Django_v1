@@ -43,6 +43,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           <Link href="/" className="nav-item hover:text-[#FF847C]">
             Dashboard
           </Link>
+          <Link href="/devices" className="nav-item hover:text-[#FF847C]">
+            Dispositivos
+          </Link>
           <Link href="/sensors" className="nav-item hover:text-[#FF847C]">
             Sensores
           </Link>

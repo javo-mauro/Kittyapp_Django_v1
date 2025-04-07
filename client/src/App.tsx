@@ -9,6 +9,7 @@ import Analytics from "@/pages/Analytics";
 import Alerts from "@/pages/Alerts";
 import Settings from "@/pages/Settings";
 import Register from "@/pages/Register";
+import Devices from "@/pages/Devices";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
@@ -73,6 +74,7 @@ function Router() {
     <AppLayout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        <Route path="/devices" component={Devices} />
         <Route path="/sensors" component={Sensors} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/alerts" component={Alerts} />

@@ -5,10 +5,10 @@ export default function MobileNav() {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: 'dashboard' },
-    { path: '/sensors', label: 'Sensors', icon: 'sensors' },
-    { path: '/analytics', label: 'Analytics', icon: 'analytics' },
-    { path: '/alerts', label: 'Alerts', icon: 'notifications' },
-    { path: '/settings', label: 'Settings', icon: 'settings' },
+    { path: '/devices', label: 'Dispositivos', icon: 'memory' },
+    { path: '/sensors', label: 'Sensores', icon: 'sensors' },
+    { path: '/analytics', label: 'Análisis', icon: 'analytics' },
+    { path: '/alerts', label: 'Alertas', icon: 'notifications' },
   ];
 
   return (
