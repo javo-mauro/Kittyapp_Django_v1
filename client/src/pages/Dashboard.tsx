@@ -34,6 +34,7 @@ export default function Dashboard() {
                 <SelectItem value="esp8266_01">ESP8266_01</SelectItem>
                 <SelectItem value="esp8266_02">ESP8266_02</SelectItem>
                 <SelectItem value="esp8266_03">ESP8266_03</SelectItem>
+                <SelectItem value="kpcl0021">KPCL0021</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -93,6 +94,16 @@ export default function Dashboard() {
             colorScheme={['#FF847C']}
           />
         </div>
+      </div>
+      
+      <div className="content-contacto p-4 mb-6">
+        <SensorChart 
+          title="Peso Registrado"
+          sensorType="weight"
+          chartType="line"
+          height="h-48"
+          colorScheme={['#EBB7AA']}
+        />
       </div>
 
       <div className="content-contacto p-4">

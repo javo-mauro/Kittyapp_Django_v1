@@ -1,7 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Titan+One&family=Varela+Round&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Titan+One&family=Varela+Round&display=swap');
 
 @layer base {
   * {
