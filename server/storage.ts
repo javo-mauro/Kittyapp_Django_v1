@@ -141,6 +141,34 @@ export class MemStorage implements IStorage {
       batteryLevel: 0
     });
 
+    // Agregar un propietario de mascota por defecto
+    const petOwner = this.createPetOwner({
+      name: "Javier",
+      paternalLastName: "Dayne",
+      maternalLastName: "González",
+      address: "Calle Principal 123, Ciudad",
+      birthDate: new Date("1985-06-15"),
+      email: "javier.dayne@example.com"
+    });
+
+    // Agregar una mascota por defecto
+    this.createPet({
+      ownerId: 1,
+      name: "Malto",
+      chipNumber: "CHIP123456",
+      breed: "Labrador",
+      species: "Perro",
+      acquisitionDate: new Date("2021-03-10"),
+      birthDate: new Date("2020-09-05"),
+      origin: "Adoptado",
+      background: "Rescatado de la calle",
+      hasVaccinations: true,
+      hasDiseases: false,
+      diseaseNotes: null,
+      lastVetVisit: new Date("2023-01-15"),
+      kittyPawDeviceId: "KPCL0021"
+    });
+
     // Create a default MQTT connection
     this.createMqttConnection({
       userId: 1,

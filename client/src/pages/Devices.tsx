@@ -7,11 +7,22 @@ import { useWebSocket } from '@/contexts/WebSocketContext';
 import SensorChart from '@/components/SensorChart';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from '@/lib/queryClient';
 
 export default function Devices() {
   const { devices, latestReadings } = useWebSocket();
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState('1h');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [petOwners, setPetOwners] = useState<any[]>([]);
+  const [pets, setPets] = useState<any[]>([]);
+  const [selectedPetOwner, setSelectedPetOwner] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   // Set the first device as default when devices are loaded
   useEffect(() => {
@@ -51,12 +62,143 @@ export default function Devices() {
     }
   }, [selectedDevice]);
 
+  // Effect para cargar las mascotas cuando se selecciona un propietario
+  useEffect(() => {
+    if (selectedPetOwner) {
+      fetch(`/api/pet-owners/${selectedPetOwner}/pets`)
+        .then(res => res.json())
+        .then(data => {
+          setPets(data);
+        })
+        .catch(error => {
+          console.error('Error fetching pets:', error);
+          toast({
+            title: 'Error',
+            description: 'No se pudieron cargar las mascotas del propietario',
+            variant: 'destructive'
+          });
+        });
+    } else {
+      setPets([]);
+    }
+  }, [selectedPetOwner, toast]);
+
+  // Estado del formulario
+  const [formData, setFormData] = useState({
+    deviceId: '',
+    name: '',
+    type: 'KittyPaw Collar',
+    selectedPet: '',
+  });
+
+  // Manejar cambios en el formulario
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Manejar envío del formulario
+  const handleSubmit = async () => {
+    if (!formData.deviceId || !formData.name) {
+      toast({
+        title: 'Campos requeridos',
+        description: 'Por favor completa todos los campos requeridos',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Crear el dispositivo
+      const deviceResponse = await apiRequest('/api/devices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deviceId: formData.deviceId,
+          name: formData.name,
+          type: formData.type,
+          status: 'offline',
+          batteryLevel: 100
+        }),
+      });
+
+      // Si se seleccionó una mascota, actualizar la mascota con el ID del dispositivo
+      if (formData.selectedPet) {
+        await apiRequest(`/api/pets/${formData.selectedPet}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            kittyPawDeviceId: formData.deviceId
+          }),
+        });
+      }
+
+      // Actualizar la lista de dispositivos
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+
+      toast({
+        title: 'Dispositivo creado',
+        description: `Se ha creado el dispositivo ${formData.deviceId} exitosamente`,
+      });
+
+      // Cerrar el modal y limpiar el formulario
+      setIsCreateModalOpen(false);
+      setFormData({
+        deviceId: '',
+        name: '',
+        type: 'KittyPaw Collar',
+        selectedPet: '',
+      });
+      setSelectedPetOwner(null);
+    } catch (error) {
+      console.error('Error creating device:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo crear el dispositivo',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between mb-6">
         <h2 className="titulo">Información del Dispositivo</h2>
         
         <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+          <Button 
+            variant="default" 
+            onClick={() => {
+              setIsCreateModalOpen(true);
+              // Cargar los propietarios de mascotas
+              fetch('/api/pet-owners')
+                .then(res => res.json())
+                .then(data => {
+                  setPetOwners(data);
+                })
+                .catch(error => {
+                  console.error('Error fetching pet owners:', error);
+                  toast({
+                    title: 'Error',
+                    description: 'No se pudieron cargar los propietarios de mascotas',
+                    variant: 'destructive'
+                  });
+                });
+            }}
+            className="mr-2"
+          >
+            <span className="material-icons text-sm mr-1">add</span>
+            Nuevo Dispositivo
+          </Button>
+          
           <div className="relative">
             <Select value={selectedDevice || ''} onValueChange={setSelectedDevice}>
               <SelectTrigger className="w-[180px]">
@@ -365,6 +507,128 @@ export default function Devices() {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Modal de creación de dispositivo */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Dispositivo</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="deviceId" className="text-right">
+                ID Dispositivo*
+              </Label>
+              <Input
+                id="deviceId"
+                name="deviceId"
+                placeholder="Ej: KPCL0022"
+                value={formData.deviceId}
+                onChange={handleFormChange}
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Nombre*
+              </Label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="Ej: KittyPaw de Fido"
+                value={formData.name}
+                onChange={handleFormChange}
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="type" className="text-right">
+                Tipo
+              </Label>
+              <Select 
+                name="type" 
+                value={formData.type} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Seleccionar tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="KittyPaw Collar">KittyPaw Collar</SelectItem>
+                  <SelectItem value="KittyPaw Locator">KittyPaw Locator</SelectItem>
+                  <SelectItem value="KittyPaw Medical">KittyPaw Medical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="petOwner" className="text-right">
+                Propietario
+              </Label>
+              <Select 
+                value={selectedPetOwner?.toString() || ''} 
+                onValueChange={(value) => setSelectedPetOwner(value ? parseInt(value) : null)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Seleccionar propietario" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Ninguno</SelectItem>
+                  {petOwners.map(owner => (
+                    <SelectItem key={owner.id} value={owner.id.toString()}>
+                      {owner.name} {owner.paternalLastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedPetOwner && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="pet" className="text-right">
+                  Mascota
+                </Label>
+                <Select 
+                  value={formData.selectedPet} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, selectedPet: value }))}
+                  disabled={pets.length === 0}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder={pets.length === 0 ? "No hay mascotas disponibles" : "Seleccionar mascota"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Ninguna</SelectItem>
+                    {pets.map(pet => (
+                      <SelectItem key={pet.id} value={pet.id.toString()}>
+                        {pet.name} ({pet.chipNumber})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <span className="mr-2">Creando...</span>
+                  <span className="material-icons animate-spin text-sm">autorenew</span>
+                </>
+              ) : (
+                'Crear Dispositivo'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
