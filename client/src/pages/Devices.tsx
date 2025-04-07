@@ -576,7 +576,7 @@ export default function Devices() {
                   <SelectValue placeholder="Seleccionar propietario" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ninguno</SelectItem>
+                  <SelectItem value="0">Ninguno</SelectItem>
                   {petOwners.map(owner => (
                     <SelectItem key={owner.id} value={owner.id.toString()}>
                       {owner.name} {owner.paternalLastName}
@@ -600,7 +600,7 @@ export default function Devices() {
                     <SelectValue placeholder={pets.length === 0 ? "No hay mascotas disponibles" : "Seleccionar mascota"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Ninguna</SelectItem>
+                    <SelectItem value="0">Ninguna</SelectItem>
                     {pets.map(pet => (
                       <SelectItem key={pet.id} value={pet.id.toString()}>
                         {pet.name} ({pet.chipNumber})
