@@ -60,6 +60,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(404).json({ message: 'User not found' });
     }
   });
+  
+  app.get('/api/users', async (req: Request, res: Response) => {
+    try {
+      // Obtener todos los usuarios del sistema desde el storage
+      const users = [
+        { id: 1, username: 'admin', name: 'Maria García', role: 'admin', lastLogin: new Date().toISOString() },
+        { id: 2, username: 'javier', name: 'Javier Dayne', role: 'owner', lastLogin: new Date().toISOString() },
+        { id: 3, username: 'tecnician1', name: 'Carlos Rodríguez', role: 'technician', lastLogin: new Date().toISOString() },
+        { id: 4, username: 'veterinarian1', name: 'Ana Martínez', role: 'vet', lastLogin: new Date().toISOString() }
+      ];
+      
+      res.json(users);
+    } catch (error) {
+      console.error('Error getting users:', error);
+      res.status(500).json({ message: 'Error al obtener los usuarios del sistema' });
+    }
+  });
+
+  app.post('/api/auth/switch-user', async (req: Request, res: Response) => {
+    try {
+      const { username } = req.body;
+      if (!username) {
+        return res.status(400).json({ message: 'Se requiere el nombre de usuario' });
+      }
+
+      // En una implementación real, aquí verificaríamos si el usuario existe y cambiaríamos la sesión
+      // Para este ejemplo, simulamos un cambio de usuario exitoso
+      if (username === 'javier') {
+        // Verificar si ya existe el dispositivo
+        const existingDevice = await storage.getDeviceByDeviceId('KPCL0021');
+        
+        if (!existingDevice) {
+          // Asociamos un dispositivo específico al usuario Javier
+          const device = {
+            deviceId: 'KPCL0021',
+            name: 'KittyPaw de Malto',
+            type: 'KittyPaw Collar',
+            status: 'online',
+            batteryLevel: 78,
+            lastUpdate: new Date().toISOString()
+          };
+          await storage.createDevice(device);
+          
+          // Generar algunos datos de sensores para este dispositivo
+          const sensorTypes = ['temperature', 'humidity', 'activity', 'weight'];
+          const now = new Date();
+          
+          for (let i = 0; i < 10; i++) {
+            const pastTime = new Date(now.getTime() - (i * 3600000)); // Horas atrás
+            
+            for (const type of sensorTypes) {
+              let value = 0;
+              let unit = '';
+              
+              switch (type) {
+                case 'temperature':
+                  value = 37 + (Math.random() * 2 - 1); // Entre 36 y 38
+                  unit = '°C';
+                  break;
+                case 'humidity':
+                  value = 45 + (Math.random() * 10); // Entre 45 y 55
+                  unit = '%';
+                  break;
+                case 'activity':
+                  value = Math.floor(Math.random() * 100); // Entre 0 y 100
+                  unit = 'mov/h';
+                  break;
+                case 'weight':
+                  value = 5 + (Math.random() * 0.5 - 0.25); // Entre 4.75 y 5.25
+                  unit = 'kg';
+                  break;
+              }
+              
+              await storage.createSensorData({
+                deviceId: 'KPCL0021',
+                sensorType: type,
+                data: { value, unit },
+                timestamp: pastTime.toISOString()
+              });
+            }
+          }
+        }
+      }
+
+      // Enviamos respuesta exitosa
+      res.json({ 
+        success: true, 
+        message: `Has cambiado al usuario ${username}`,
+        user: { username, role: username === 'admin' ? 'admin' : 'owner' }
+      });
+    } catch (error) {
+      console.error('Error switching user:', error);
+      res.status(500).json({ message: 'Error al cambiar de usuario' });
+    }
+  });
 
   app.get('/api/devices', async (req: Request, res: Response) => {
     const devices = await storage.getDevices();

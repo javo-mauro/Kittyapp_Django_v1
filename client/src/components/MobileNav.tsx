@@ -6,7 +6,7 @@ export default function MobileNav() {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: 'dashboard' },
     { path: '/devices', label: 'Dispositivos', icon: 'memory' },
-    { path: '/sensors', label: 'Sensores', icon: 'sensors' },
+    { path: '/users', label: 'Usuarios', icon: 'people' },
     { path: '/analytics', label: 'Análisis', icon: 'analytics' },
     { path: '/register', label: 'Registro', icon: 'person_add' },
   ];

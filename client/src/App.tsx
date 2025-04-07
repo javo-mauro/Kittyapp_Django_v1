@@ -10,6 +10,7 @@ import Alerts from "@/pages/Alerts";
 import Settings from "@/pages/Settings";
 import Register from "@/pages/Register";
 import Devices from "@/pages/Devices";
+import Users from "@/pages/Users";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
@@ -79,6 +80,7 @@ function Router() {
         <Route path="/analytics" component={Analytics} />
         <Route path="/alerts" component={Alerts} />
         <Route path="/settings" component={Settings} />
+        <Route path="/users" component={Users} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

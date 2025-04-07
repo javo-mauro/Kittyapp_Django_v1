@@ -11,7 +11,7 @@ body {
 }
 
 .navbar-brand img {
-    max-height: 60px;
+    max-height: 40px;
 } /* Estilo de los botones sociales */
 .social-buttons {
     display: flex;
@@ -88,7 +88,7 @@ h2{
 }
 
 .fotoinicio{
-    max-height: 100px;
+    max-height:100px;
  /* Asegura que se respete la altura máxima */
 }
 

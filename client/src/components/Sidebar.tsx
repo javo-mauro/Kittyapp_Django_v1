@@ -41,6 +41,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { path: '/sensors', label: 'Sensores', icon: 'sensors' },
     { path: '/analytics', label: 'Análisis', icon: 'analytics' },
     { path: '/alerts', label: 'Alertas', icon: 'notifications' },
+    { path: '/users', label: 'Usuarios', icon: 'people' },
     { path: '/settings', label: 'Configuración', icon: 'settings' },
     { path: '/register', label: 'Registro', icon: 'person_add' },
   ];
