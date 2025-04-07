@@ -42,6 +42,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { path: '/analytics', label: 'Análisis', icon: 'analytics' },
     { path: '/alerts', label: 'Alertas', icon: 'notifications' },
     { path: '/settings', label: 'Configuración', icon: 'settings' },
+    { path: '/register', label: 'Registro', icon: 'person_add' },
   ];
 
   const sidebarClass = `w-64 bg-white shadow-lg fixed lg:relative z-10 h-full transition-transform duration-300 ease-in-out ${
@@ -74,8 +75,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <ul>
               {navItems.map((item) => (
                 <li key={item.path} className="mb-1">
-                  <Link href={item.path}>
-                    <a
+                  <Link to={item.path}>
+                    <div
                       className={`flex items-center px-4 py-3 rounded-lg transition-colors group ${
                         location === item.path
                           ? 'bg-[#FF847C] bg-opacity-10 text-[#FF847C]'
@@ -88,7 +89,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                           : 'text-[#2A363B] group-hover:text-[#FF847C]'
                       }`}>{item.icon}</span>
                       <span>{item.label}</span>
-                    </a>
+                    </div>
                   </Link>
                 </li>
               ))}
