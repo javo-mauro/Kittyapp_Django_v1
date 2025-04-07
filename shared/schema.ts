@@ -133,6 +133,8 @@ export type PetOwner = {
   address: string;
   birthDate: Date;
   email: string;
+  username: string; // Nombre de usuario para inicio de sesión
+  password: string; // Contraseña para inicio de sesión
   createdAt: Date;
   updatedAt: Date;
 };

@@ -53,6 +53,7 @@ export interface IStorage {
   getPetOwners(): Promise<PetOwner[]>;
   getPetOwner(id: number): Promise<PetOwner | undefined>;
   getPetOwnerByEmail(email: string): Promise<PetOwner | undefined>;
+  getPetOwnerByUsername(username: string): Promise<PetOwner | undefined>;
   createPetOwner(owner: InsertPetOwner): Promise<PetOwner>;
   updatePetOwner(id: number, owner: Partial<InsertPetOwner>): Promise<PetOwner>;
   deletePetOwner(id: number): Promise<boolean>;
@@ -148,7 +149,9 @@ export class MemStorage implements IStorage {
       maternalLastName: "González",
       address: "Calle Principal 123, Ciudad",
       birthDate: new Date("1985-06-15"),
-      email: "javier.dayne@example.com"
+      email: "javier.dayne@example.com",
+      username: "jdayne",
+      password: "jdayne21"
     });
 
     // Agregar una mascota por defecto
@@ -193,7 +196,13 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
     const now = new Date();
-    const user: User = { ...insertUser, id, lastLogin: now };
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      lastLogin: now,
+      name: insertUser.name || null,
+      role: insertUser.role || null
+    };
     this.users.set(id, user);
     return user;
   }
@@ -224,7 +233,14 @@ export class MemStorage implements IStorage {
   async createDevice(insertDevice: InsertDevice): Promise<Device> {
     const id = this.currentDeviceId++;
     const now = new Date();
-    const device: Device = { ...insertDevice, id, lastUpdate: now };
+    const device: Device = { 
+      ...insertDevice, 
+      id, 
+      lastUpdate: now,
+      status: insertDevice.status || null,
+      ipAddress: insertDevice.ipAddress || null,
+      batteryLevel: insertDevice.batteryLevel || null
+    };
     this.devices.set(id, device);
     return device;
   }
@@ -322,7 +338,13 @@ export class MemStorage implements IStorage {
       ...insertConnection, 
       id, 
       connected: false,
-      lastConnected: now 
+      lastConnected: now,
+      username: insertConnection.username || null,
+      password: insertConnection.password || null,
+      userId: insertConnection.userId || null,
+      caCert: insertConnection.caCert || null,
+      clientCert: insertConnection.clientCert || null,
+      privateKey: insertConnection.privateKey || null
     };
     this.mqttConnections.set(id, connection);
     return connection;
@@ -381,6 +403,12 @@ export class MemStorage implements IStorage {
   async getPetOwnerByEmail(email: string): Promise<PetOwner | undefined> {
     return Array.from(this.petOwners.values()).find(
       (owner) => owner.email === email
+    );
+  }
+
+  async getPetOwnerByUsername(username: string): Promise<PetOwner | undefined> {
+    return Array.from(this.petOwners.values()).find(
+      (owner) => owner.username === username
     );
   }
 

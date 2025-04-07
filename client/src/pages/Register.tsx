@@ -28,6 +28,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
+import { CustomCalendar } from "@/components/CustomCalendar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,9 @@ const petOwnerFormSchema = z.object({
   number: z.string().min(1, { message: "El número debe tener al menos 1 caracter" }),
   addressDetails: z.string().optional(),
   birthDate: z.date({ required_error: "Se requiere fecha de nacimiento" }),
-  email: z.string().email({ message: "Correo electrónico inválido" })
+  email: z.string().email({ message: "Correo electrónico inválido" }),
+  username: z.string().min(6, { message: "El nombre de usuario debe tener al menos 6 caracteres" }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" })
 });
 
 // Esquema para validar el formulario de mascota
@@ -106,8 +109,11 @@ export default function Register() {
       district: "",
       street: "",
       number: "",
+      username: "",
+      password: "",
       addressDetails: "",
-      email: ""
+      email: "",
+      birthDate: undefined
     }
   });
 
@@ -451,39 +457,42 @@ export default function Register() {
                         control={petOwnerForm.control}
                         name="birthDate"
                         render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Fecha de Nacimiento</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, "PPP", { locale: es })
-                                    ) : (
-                                      <span>Seleccionar fecha</span>
-                                    )}
-                                    <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) =>
-                                    date > new Date() || date < new Date("1900-01-01")
-                                  }
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
+                          <CustomCalendar 
+                            field={field} 
+                            label="Fecha de Nacimiento" 
+                          />
+                        )}
+                      />
+
+                      <FormField
+                        control={petOwnerForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nombre de Usuario</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Mínimo 6 caracteres" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Será usado para iniciar sesión
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={petOwnerForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Contraseña</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Mínimo 6 caracteres" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Utiliza al menos 6 caracteres
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -661,41 +670,10 @@ export default function Register() {
                         control={petForm.control}
                         name="acquisitionDate"
                         render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Fecha de Adquisición</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, "PPP", { locale: es })
-                                    ) : (
-                                      <span>Seleccionar fecha</span>
-                                    )}
-                                    <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) =>
-                                    date > new Date() || date < new Date("1900-01-01")
-                                  }
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
+                          <CustomCalendar 
+                            field={field} 
+                            label="Fecha de Adquisición" 
+                          />
                         )}
                       />
 
@@ -703,41 +681,10 @@ export default function Register() {
                         control={petForm.control}
                         name="birthDate"
                         render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Fecha de Nacimiento</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, "PPP", { locale: es })
-                                    ) : (
-                                      <span>Seleccionar fecha</span>
-                                    )}
-                                    <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) =>
-                                    date > new Date() || date < new Date("1900-01-01")
-                                  }
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
+                          <CustomCalendar 
+                            field={field} 
+                            label="Fecha de Nacimiento" 
+                          />
                         )}
                       />
 
@@ -745,41 +692,10 @@ export default function Register() {
                         control={petForm.control}
                         name="lastVetVisit"
                         render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Última visita al veterinario</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, "PPP", { locale: es })
-                                    ) : (
-                                      <span>Seleccionar fecha</span>
-                                    )}
-                                    <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) =>
-                                    date > new Date() || date < new Date("1900-01-01")
-                                  }
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
+                          <CustomCalendar 
+                            field={field} 
+                            label="Última visita al veterinario" 
+                          />
                         )}
                       />
 
