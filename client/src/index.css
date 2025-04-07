@@ -18,6 +18,19 @@
     font-family: 'Titan One', sans-serif;
     color: #EBB7AA;
   }
+  
+  .titulo {
+    font-size: 40px;
+    font-weight: bold;
+    color: #EBB7AA;
+    font-family: "Titan One", sans-serif;
+    font-style: normal;
+  }
+  
+  .nav-item {
+    font-size: 20px;
+    color: #2A363B;
+  }
 
   .navbar {
     @apply bg-white shadow-md fixed top-0 left-0 right-0 z-50;
@@ -54,5 +67,44 @@
 
   .status-error {
     @apply bg-[#E84A5F];
+  }
+  
+  /* Content sections */
+  .content-prototipo {
+    background-color: #EBB7AA;
+    color: #2A363B;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    padding: 40px 20px;
+  }
+  
+  .content-data {
+    background-color: #FF847C;
+    color: #2A363B;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    padding: 40px 20px;
+  }
+  
+  .content-contacto {
+    background-color: #99B898;
+    color: #2A363B;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    padding: 40px 20px;
+  }
+  
+  /* Columns layout */
+  .columns {
+    display: flex;
+  }
+  
+  .column {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
   }
 }

@@ -1,0 +1,166 @@
+/* NAV NAV NAV */
+          /* Ajuste del logo en la barra de navegación */
+
+body {
+    padding-top: 70px; /* Ajusta este valor según la altura de tu navbar */
+}
+
+.navbar {
+    background-color: #ffffff; /* O el color que prefieras */
+    box-shadow: 0 2px 4px rgba(0,0,0,.1); /* Opcional: añade una sombra sutil */
+}
+
+.navbar-brand img {
+    max-height: 60px;
+} /* Estilo de los botones sociales */
+.social-buttons {
+    display: flex;
+    align-items: center;
+}
+
+.social-buttons a {
+    margin-left: 30px;
+}
+
+        /* letras titulo*/
+.titulo {
+    font-size: 40px;
+    font-weight: bold;
+    color: #EBB7AA;
+    font-family: "Titan One", sans-serif;
+    font-style: normal;
+}
+      /* letras nav */
+.nav-item {
+    font-size: 20px;
+    color: #2A363B;
+}
+h2{
+    font-family: "Varela Round", sans-serif;
+}
+
+
+
+
+
+
+
+/* ESTILO CONTEINERS */
+
+      /* Espaciado para las secciones */
+
+    /* Estilo para las secciones */
+.content-prototipo {
+    background-color:#EBB7AA;
+    color: #2A363B;
+}
+.content-data {
+    background-color:#FF847C;
+    color: #2A363B;
+}
+.content-contacto {
+    background-color:#99B898;
+    color: #2A363B;
+}
+
+.content-prototipo, .content-data, .content-contacto {
+    margin-bottom: 30px; /* Espaciado externo (margen) entre secciones */
+    border-radius: 8px; /* Bordes redondeados */
+    padding: 40px 20px; /* Espaciado interno específico para cada sección */
+}
+
+.columns {
+    display: flex;
+}
+.column {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%; /* Asegúrate de que la columna tenga una altura definida */
+}
+.column {
+    flex: 1;
+    padding: 10px;
+}
+.fotojavomauro {
+    max-height: 200px;
+ /* Asegura que se respete la altura máxima */
+}
+
+.fotoinicio{
+    max-height: 100px;
+ /* Asegura que se respete la altura máxima */
+}
+
+
+
+
+
+
+
+
+
+
+.login-container {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+}
+
+.login-form h2 {
+    text-align: center;
+    color: #2A363B;
+    margin-bottom: 30px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #2A363B;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #FF847C;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #ff6b61;
+}
+
+.additional-options {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.additional-options a {
+    color: #2A363B;
+    text-decoration: none;
+    font-size: 14px;
+    margin: 0 10px;
+}
+
+.additional-options a:hover {
+    text-decoration: underline;
+}

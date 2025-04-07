@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import { Link } from 'wouter';
+import kittyLogo from '../assets/kitty-logo.jpg';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -32,25 +33,23 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           <div className="flex items-center">
             {/* Logo */}
             <div className="h-12 w-12 rounded-full overflow-hidden mr-3">
-              <div className="h-full w-full bg-[#EBB7AA] flex items-center justify-center">
-                <span className="material-icons text-white text-2xl">pets</span>
-              </div>
+              <img src={kittyLogo} alt="Kitty Paw" className="h-full w-full object-cover" />
             </div>
             <h1 className="app-title text-2xl font-bold">Kitty Paw</h1>
           </div>
         </div>
         
         <div className="hidden md:flex items-center space-x-6">
-          <Link href="/" className="font-medium text-[#2A363B] hover:text-[#FF847C]">
+          <Link href="/" className="nav-item hover:text-[#FF847C]">
             Dashboard
           </Link>
-          <Link href="/sensors" className="font-medium text-[#2A363B] hover:text-[#FF847C]">
+          <Link href="/sensors" className="nav-item hover:text-[#FF847C]">
             Sensores
           </Link>
-          <Link href="/analytics" className="font-medium text-[#2A363B] hover:text-[#FF847C]">
+          <Link href="/analytics" className="nav-item hover:text-[#FF847C]">
             Análisis
           </Link>
-          <Link href="/alerts" className="font-medium text-[#2A363B] hover:text-[#FF847C]">
+          <Link href="/alerts" className="nav-item hover:text-[#FF847C]">
             Alertas
           </Link>
         </div>

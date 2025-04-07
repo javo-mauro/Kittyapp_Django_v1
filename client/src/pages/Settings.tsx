@@ -119,35 +119,35 @@ export default function Settings() {
   
   return (
     <div>
-      <h2 className="text-2xl font-medium mb-6">Settings</h2>
+      <h2 className="titulo mb-6">Configuración</h2>
       
       <Tabs defaultValue="mqtt" className="mb-6">
-        <TabsList className="mb-4">
-          <TabsTrigger value="mqtt">MQTT Connection</TabsTrigger>
-          <TabsTrigger value="devices">Device Management</TabsTrigger>
-          <TabsTrigger value="system">System</TabsTrigger>
+        <TabsList className="mb-4 bg-[#EBB7AA]">
+          <TabsTrigger value="mqtt" className="data-[state=active]:bg-[#FF847C] data-[state=active]:text-white">Conexión MQTT</TabsTrigger>
+          <TabsTrigger value="devices" className="data-[state=active]:bg-[#FF847C] data-[state=active]:text-white">Gestión de Dispositivos</TabsTrigger>
+          <TabsTrigger value="system" className="data-[state=active]:bg-[#FF847C] data-[state=active]:text-white">Sistema</TabsTrigger>
         </TabsList>
         
         <TabsContent value="mqtt">
-          <Card className="p-6">
-            <h3 className="text-lg font-medium mb-4">MQTT Broker Configuration</h3>
+          <div className="content-data p-6 rounded-lg">
+            <h3 className="text-lg font-medium mb-4 text-[#2A363B]">Configuración del Broker MQTT</h3>
             
-            <div className="mb-6 p-4 bg-neutral-50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Current Connection</h4>
+            <div className="mb-6 p-4 bg-white rounded-lg">
+              <h4 className="text-sm font-medium mb-2">Conexión Actual</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-neutral-500">Status:</div>
+                <div className="text-[#2A363B]">Estado:</div>
                 <div className="font-medium flex items-center">
                   {mqttConnected ? (
                     <>
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                      Connected
+                      <span className="w-2 h-2 bg-[#99B898] rounded-full mr-2"></span>
+                      Conectado
                       {mqttStatus?.hasCaCert && mqttStatus?.hasClientCert && mqttStatus?.hasPrivateKey && (
-                        <span className="ml-2 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded">SSL/TLS</span>
+                        <span className="ml-2 bg-[#EBB7AA] text-[#2A363B] text-xs px-2 py-0.5 rounded">SSL/TLS</span>
                       )}
                     </>
                   ) : (
                     <>
-                      <span className="w-2 h-2 bg-neutral-400 rounded-full mr-2"></span>
+                      <span className="w-2 h-2 bg-[#E84A5F] rounded-full mr-2"></span>
                       Disconnected
                     </>
                   )}
@@ -277,85 +277,85 @@ export default function Settings() {
                 </div>
               )}
               
-              <Button onClick={handleConnectMqtt} className="w-full mt-2">
+              <Button onClick={handleConnectMqtt} className="w-full mt-2 btn-primary">
                 Conectar a broker MQTT
               </Button>
             </div>
-          </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="devices">
-          <Card className="p-6">
-            <h3 className="text-lg font-medium mb-4">Device Management</h3>
+          <div className="content-prototipo p-6 rounded-lg">
+            <h3 className="text-lg font-medium mb-4 text-[#2A363B]">Gestión de Dispositivos</h3>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Auto-discovery</h4>
-                  <p className="text-sm text-neutral-500">Automatically discover and add new devices</p>
+                  <h4 className="font-medium">Auto-descubrimiento</h4>
+                  <p className="text-sm text-[#2A363B]">Descubrir y añadir automáticamente nuevos dispositivos</p>
                 </div>
                 <Switch id="auto-discovery" />
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Status notifications</h4>
-                  <p className="text-sm text-neutral-500">Get notified when device status changes</p>
+                  <h4 className="font-medium">Notificaciones de estado</h4>
+                  <p className="text-sm text-[#2A363B]">Recibir notificaciones cuando cambie el estado de un dispositivo</p>
                 </div>
                 <Switch id="status-notifications" defaultChecked />
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Low battery alerts</h4>
-                  <p className="text-sm text-neutral-500">Notify when battery level falls below 20%</p>
+                  <h4 className="font-medium">Alertas de batería baja</h4>
+                  <p className="text-sm text-[#2A363B]">Notificar cuando el nivel de batería caiga por debajo del 20%</p>
                 </div>
                 <Switch id="battery-alerts" defaultChecked />
               </div>
             </div>
-          </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="system">
-          <Card className="p-6">
-            <h3 className="text-lg font-medium mb-4">System Settings</h3>
+          <div className="content-contacto p-6 rounded-lg">
+            <h3 className="text-lg font-medium mb-4 text-[#2A363B]">Configuración del Sistema</h3>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Dark Mode</h4>
-                  <p className="text-sm text-neutral-500">Switch between light and dark theme</p>
+                  <h4 className="font-medium">Modo Oscuro</h4>
+                  <p className="text-sm text-[#2A363B]">Cambiar entre tema claro y oscuro</p>
                 </div>
                 <Switch id="dark-mode" />
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Data refresh interval</h4>
-                  <p className="text-sm text-neutral-500">How often to refresh data in the dashboard</p>
+                  <h4 className="font-medium">Intervalo de actualización</h4>
+                  <p className="text-sm text-[#2A363B]">Con qué frecuencia actualizar los datos en el panel</p>
                 </div>
-                <select className="bg-white border border-neutral-200 rounded-lg py-1 px-3 text-sm">
-                  <option value="5">5 seconds</option>
-                  <option value="10" selected>10 seconds</option>
-                  <option value="30">30 seconds</option>
-                  <option value="60">1 minute</option>
+                <select className="bg-white border border-[#EBB7AA] rounded-lg py-1 px-3 text-sm">
+                  <option value="5">5 segundos</option>
+                  <option value="10" selected>10 segundos</option>
+                  <option value="30">30 segundos</option>
+                  <option value="60">1 minuto</option>
                 </select>
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Data retention</h4>
-                  <p className="text-sm text-neutral-500">How long to keep historical data</p>
+                  <h4 className="font-medium">Retención de datos</h4>
+                  <p className="text-sm text-[#2A363B]">Durante cuánto tiempo conservar datos históricos</p>
                 </div>
-                <select className="bg-white border border-neutral-200 rounded-lg py-1 px-3 text-sm">
-                  <option value="7">7 days</option>
-                  <option value="30" selected>30 days</option>
-                  <option value="90">90 days</option>
-                  <option value="365">1 year</option>
+                <select className="bg-white border border-[#EBB7AA] rounded-lg py-1 px-3 text-sm">
+                  <option value="7">7 días</option>
+                  <option value="30" selected>30 días</option>
+                  <option value="90">90 días</option>
+                  <option value="365">1 año</option>
                 </select>
               </div>
             </div>
-          </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

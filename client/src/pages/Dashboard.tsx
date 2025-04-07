@@ -21,16 +21,16 @@ export default function Dashboard() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between mb-6">
-        <h2 className="text-2xl font-medium">Sensor Monitoring</h2>
+        <h2 className="titulo">Monitoreo de Sensores</h2>
         
         <div className="flex items-center space-x-2 mt-2 sm:mt-0">
           <div className="relative">
             <Select value={deviceFilter} onValueChange={setDeviceFilter}>
               <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="All Devices" />
+                <SelectValue placeholder="Todos los Dispositivos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Devices</SelectItem>
+                <SelectItem value="all">Todos los Dispositivos</SelectItem>
                 <SelectItem value="esp8266_01">ESP8266_01</SelectItem>
                 <SelectItem value="esp8266_02">ESP8266_02</SelectItem>
                 <SelectItem value="esp8266_03">ESP8266_03</SelectItem>
@@ -41,55 +41,63 @@ export default function Dashboard() {
           <div className="relative">
             <Select value={timeRange} onValueChange={setTimeRange}>
               <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Last Hour" />
+                <SelectValue placeholder="Última Hora" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1h">Last Hour</SelectItem>
-                <SelectItem value="3h">Last 3 Hours</SelectItem>
-                <SelectItem value="12h">Last 12 Hours</SelectItem>
-                <SelectItem value="24h">Last 24 Hours</SelectItem>
-                <SelectItem value="7d">Last Week</SelectItem>
+                <SelectItem value="1h">Última Hora</SelectItem>
+                <SelectItem value="3h">Últimas 3 Horas</SelectItem>
+                <SelectItem value="12h">Últimas 12 Horas</SelectItem>
+                <SelectItem value="24h">Últimas 24 Horas</SelectItem>
+                <SelectItem value="7d">Última Semana</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
-          <Button variant="outline" size="icon" onClick={handleRefresh}>
+          <Button variant="outline" size="icon" onClick={handleRefresh} className="btn-secondary">
             <span className="material-icons">refresh</span>
           </Button>
         </div>
       </div>
 
-      <SystemMetrics />
+      <div className="content-prototipo p-6 mb-6">
+        <SystemMetrics />
+      </div>
       
-      <div className="mb-6">
+      <div className="content-data p-4 mb-6">
         <SensorChart 
-          title="Temperature Trend"
+          title="Tendencia de Temperatura"
           sensorType="temperature"
           chartType="line"
           height="h-64"
-          colorScheme={['#3f51b5', '#ff4081']}
+          colorScheme={['#2A363B', '#FF847C']}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <SensorChart 
-          title="Humidity Levels"
-          sensorType="humidity"
-          chartType="line"
-          height="h-48"
-          colorScheme={['#4caf50']}
-        />
+      <div className="columns flex-col md:flex-row gap-6 mb-6">
+        <div className="column content-data p-4 mb-4 md:mb-0 md:mr-3">
+          <SensorChart 
+            title="Niveles de Humedad"
+            sensorType="humidity"
+            chartType="line"
+            height="h-48"
+            colorScheme={['#99B898']}
+          />
+        </div>
 
-        <SensorChart 
-          title="Light Intensity"
-          sensorType="light"
-          chartType="bar"
-          height="h-48"
-          colorScheme={['#ff9800']}
-        />
+        <div className="column content-prototipo p-4 md:ml-3">
+          <SensorChart 
+            title="Intensidad de Luz"
+            sensorType="light"
+            chartType="bar"
+            height="h-48"
+            colorScheme={['#FF847C']}
+          />
+        </div>
       </div>
 
-      <DeviceList />
+      <div className="content-contacto p-4">
+        <DeviceList />
+      </div>
     </div>
   );
 }
