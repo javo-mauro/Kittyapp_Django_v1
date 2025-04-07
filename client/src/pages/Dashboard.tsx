@@ -31,9 +31,6 @@ export default function Dashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los Dispositivos</SelectItem>
-                <SelectItem value="esp8266_01">ESP8266_01</SelectItem>
-                <SelectItem value="esp8266_02">ESP8266_02</SelectItem>
-                <SelectItem value="esp8266_03">ESP8266_03</SelectItem>
                 <SelectItem value="kpcl0021">KPCL0021</SelectItem>
               </SelectContent>
             </Select>

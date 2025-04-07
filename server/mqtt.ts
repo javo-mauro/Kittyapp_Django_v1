@@ -5,7 +5,7 @@ import { log } from './vite';
 
 class MqttClient {
   private client: mqtt.MqttClient | null = null;
-  private topic: string = 'esp8266/+/+';
+  private topic: string = 'KPCL0021/pub';
   private connectionId: number | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private webSockets: Set<WebSocket> = new Set();
@@ -116,19 +116,10 @@ class MqttClient {
 
   private subscribe() {
     if (this.client && this.client.connected) {
-      // Suscribirse a los tópicos estándar esp8266/+/+
+      // Suscribirse al tópico definido en la clase
       this.client.subscribe(this.topic, (err) => {
         if (!err) {
           log(`Subscribed to topic: ${this.topic}`, 'mqtt');
-        } else {
-          log(`Error subscribing to topic: ${err.message}`, 'mqtt');
-        }
-      });
-      
-      // Suscribirse al tópico KPCL0021/pub
-      this.client.subscribe('KPCL0021/pub', (err) => {
-        if (!err) {
-          log(`Subscribed to topic: KPCL0021/pub`, 'mqtt');
         } else {
           log(`Error subscribing to topic: ${err.message}`, 'mqtt');
         }
@@ -141,192 +132,138 @@ class MqttClient {
       const message = messageBuffer.toString();
       log(`Received message on topic ${topic}: ${message}`, 'mqtt');
 
-      // Manejar tópico KPCL0021/pub con formato específico
-      if (topic === 'KPCL0021/pub') {
-        try {
-          // Parse message según formato: {"device_id": "THINGNAME", "timestamp": "...", "humidity": h, "temperature": t, "light": light, "weight": weight}
-          const kpcData = JSON.parse(message);
-          const deviceId = kpcData.device_id;
-          
-          if (!deviceId) {
-            log(`Invalid KPCL0021 message format, missing device_id: ${message}`, 'mqtt');
-            return;
-          }
-          
-          // Check if device exists, if not create it
-          let device = await storage.getDeviceByDeviceId(deviceId);
-          if (!device) {
-            device = await storage.createDevice({
-              deviceId,
-              name: `Kitty Paw Device ${deviceId}`,
-              type: 'KittyPaw',
-              status: 'online',
-              batteryLevel: 100
-            });
-          }
-          
-          // Procesar los diferentes tipos de sensores incluidos en el mensaje (humidity, temperature, light, weight)
-          // y crearlos como sensores independientes
-          
-          // Procesar temperatura
-          if (kpcData.temperature !== undefined) {
-            const tempData = {
-              value: kpcData.temperature,
-              unit: '°C',
-              timestamp: kpcData.timestamp
-            };
-            
-            const sensorData = await storage.createSensorData({
-              deviceId,
-              sensorType: 'temperature',
-              data: tempData
-            });
-            
-            this.broadcastToClients({
-              type: 'sensor_data',
-              deviceId,
-              sensorType: 'temperature',
-              data: tempData,
-              timestamp: sensorData.timestamp
-            });
-          }
-          
-          // Procesar humedad
-          if (kpcData.humidity !== undefined) {
-            const humidityData = {
-              value: kpcData.humidity,
-              unit: '%',
-              timestamp: kpcData.timestamp
-            };
-            
-            const sensorData = await storage.createSensorData({
-              deviceId,
-              sensorType: 'humidity',
-              data: humidityData
-            });
-            
-            this.broadcastToClients({
-              type: 'sensor_data',
-              deviceId,
-              sensorType: 'humidity',
-              data: humidityData,
-              timestamp: sensorData.timestamp
-            });
-          }
-          
-          // Procesar luz
-          if (kpcData.light !== undefined) {
-            const lightData = {
-              value: kpcData.light,
-              unit: 'lux',
-              timestamp: kpcData.timestamp
-            };
-            
-            const sensorData = await storage.createSensorData({
-              deviceId,
-              sensorType: 'light',
-              data: lightData
-            });
-            
-            this.broadcastToClients({
-              type: 'sensor_data',
-              deviceId,
-              sensorType: 'light',
-              data: lightData,
-              timestamp: sensorData.timestamp
-            });
-          }
-          
-          // Procesar peso
-          if (kpcData.weight !== undefined) {
-            const weightData = {
-              value: kpcData.weight,
-              unit: 'g',
-              timestamp: kpcData.timestamp
-            };
-            
-            const sensorData = await storage.createSensorData({
-              deviceId,
-              sensorType: 'weight',
-              data: weightData
-            });
-            
-            this.broadcastToClients({
-              type: 'sensor_data',
-              deviceId,
-              sensorType: 'weight',
-              data: weightData,
-              timestamp: sensorData.timestamp
-            });
-          }
-          
-          // Update system metrics and broadcast
-          const metrics = await storage.getSystemMetrics();
-          this.broadcastToClients({
-            type: 'system_metrics',
-            metrics
-          });
-          
-          return;
-        } catch (error) {
-          log(`Error processing KPCL0021/pub message: ${error}`, 'mqtt');
-          return;
-        }
-      }
-      
-      // Manejo original para tópicos esp8266/deviceId/sensorType
-      const topicParts = topic.split('/');
-      if (topicParts.length !== 3 || topicParts[0] !== 'esp8266') {
-        log(`Invalid topic format: ${topic}`, 'mqtt');
+      // Solo manejamos el tópico KPCL0021/pub
+      if (topic !== 'KPCL0021/pub') {
+        log(`Ignoring non-KPCL0021 topic: ${topic}`, 'mqtt');
         return;
       }
-
-      const deviceId = topicParts[1];
-      const sensorType = topicParts[2];
-
-      // Parse message as JSON
-      const data = JSON.parse(message);
-
-      // Check if device exists, if not create it
-      let device = await storage.getDeviceByDeviceId(deviceId);
-      if (!device) {
-        device = await storage.createDevice({
-          deviceId,
-          name: `New Device ${deviceId}`,
-          type: 'Unknown',
-          status: 'online',
-          batteryLevel: data.battery || 100
-        });
-      } else {
-        // Update device status and battery
-        if (data.battery !== undefined) {
-          await storage.updateDeviceBattery(deviceId, data.battery);
+      
+      try {
+        // Parse message según formato: {"device_id": "THINGNAME", "timestamp": "...", "humidity": h, "temperature": t, "light": light, "weight": weight}
+        const kpcData = JSON.parse(message);
+        const deviceId = kpcData.device_id;
+        
+        if (!deviceId) {
+          log(`Invalid KPCL0021 message format, missing device_id: ${message}`, 'mqtt');
+          return;
         }
+        
+        // Check if device exists, if not create it
+        let device = await storage.getDeviceByDeviceId(deviceId);
+        if (!device) {
+          device = await storage.createDevice({
+            deviceId,
+            name: `Kitty Paw Device ${deviceId}`,
+            type: 'KittyPaw',
+            status: 'online',
+            batteryLevel: 100
+          });
+        }
+        
+        // Procesar los diferentes tipos de sensores incluidos en el mensaje (humidity, temperature, light, weight)
+        // y crearlos como sensores independientes
+        
+        // Procesar temperatura
+        if (kpcData.temperature !== undefined) {
+          const tempData = {
+            value: kpcData.temperature,
+            unit: '°C',
+            timestamp: kpcData.timestamp
+          };
+          
+          const sensorData = await storage.createSensorData({
+            deviceId,
+            sensorType: 'temperature',
+            data: tempData
+          });
+          
+          this.broadcastToClients({
+            type: 'sensor_data',
+            deviceId,
+            sensorType: 'temperature',
+            data: tempData,
+            timestamp: sensorData.timestamp
+          });
+        }
+        
+        // Procesar humedad
+        if (kpcData.humidity !== undefined) {
+          const humidityData = {
+            value: kpcData.humidity,
+            unit: '%',
+            timestamp: kpcData.timestamp
+          };
+          
+          const sensorData = await storage.createSensorData({
+            deviceId,
+            sensorType: 'humidity',
+            data: humidityData
+          });
+          
+          this.broadcastToClients({
+            type: 'sensor_data',
+            deviceId,
+            sensorType: 'humidity',
+            data: humidityData,
+            timestamp: sensorData.timestamp
+          });
+        }
+        
+        // Procesar luz
+        if (kpcData.light !== undefined) {
+          const lightData = {
+            value: kpcData.light,
+            unit: 'lux',
+            timestamp: kpcData.timestamp
+          };
+          
+          const sensorData = await storage.createSensorData({
+            deviceId,
+            sensorType: 'light',
+            data: lightData
+          });
+          
+          this.broadcastToClients({
+            type: 'sensor_data',
+            deviceId,
+            sensorType: 'light',
+            data: lightData,
+            timestamp: sensorData.timestamp
+          });
+        }
+        
+        // Procesar peso
+        if (kpcData.weight !== undefined) {
+          const weightData = {
+            value: kpcData.weight,
+            unit: 'g',
+            timestamp: kpcData.timestamp
+          };
+          
+          const sensorData = await storage.createSensorData({
+            deviceId,
+            sensorType: 'weight',
+            data: weightData
+          });
+          
+          this.broadcastToClients({
+            type: 'sensor_data',
+            deviceId,
+            sensorType: 'weight',
+            data: weightData,
+            timestamp: sensorData.timestamp
+          });
+        }
+        
+        // Update system metrics and broadcast
+        const metrics = await storage.getSystemMetrics();
+        this.broadcastToClients({
+          type: 'system_metrics',
+          metrics
+        });
+      } catch (error) {
+        log(`Error processing KPCL0021/pub message: ${error}`, 'mqtt');
       }
-
-      // Store sensor data
-      const sensorData = await storage.createSensorData({
-        deviceId,
-        sensorType,
-        data
-      });
-
-      // Broadcast to WebSocket clients
-      this.broadcastToClients({
-        type: 'sensor_data',
-        deviceId,
-        sensorType,
-        data,
-        timestamp: sensorData.timestamp
-      });
-
-      // Update system metrics and broadcast
-      const metrics = await storage.getSystemMetrics();
-      this.broadcastToClients({
-        type: 'system_metrics',
-        metrics
-      });
-
     } catch (error) {
       log(`Error handling MQTT message: ${error}`, 'mqtt');
     }
@@ -405,44 +342,8 @@ class MqttClient {
     if (!this.client || !this.client.connected) {
       return;
     }
-
-    // Generar datos para los dispositivos originales
-    const devices = ['ESP8266_01', 'ESP8266_02', 'ESP8266_03'];
-    const sensorTypes = {
-      'ESP8266_01': ['temperature', 'humidity'],
-      'ESP8266_02': ['light'],
-      'ESP8266_03': ['motion']
-    };
-
-    for (const deviceId of devices) {
-      const batteryLevel = Math.floor(Math.random() * 100);
-      
-      for (const sensorType of sensorTypes[deviceId as keyof typeof sensorTypes]) {
-        let data: any = { battery: batteryLevel };
-        
-        if (sensorType === 'temperature') {
-          data.value = Math.random() * 10 + 20; // 20-30°C
-          data.unit = '°C';
-        } else if (sensorType === 'humidity') {
-          data.value = Math.random() * 30 + 40; // 40-70%
-          data.unit = '%';
-        } else if (sensorType === 'light') {
-          data.value = Math.random() * 1000 + 200; // 200-1200 lux
-          data.unit = 'lux';
-        } else if (sensorType === 'motion') {
-          data.detected = Math.random() > 0.7;
-        }
-        
-        const topic = `esp8266/${deviceId}/${sensorType}`;
-        const message = JSON.stringify(data);
-        
-        if (this.client && this.client.connected) {
-          this.client.publish(topic, message);
-        }
-      }
-    }
     
-    // Generar datos para el tópico KPCL0021/pub con el formato especificado
+    // Solo generar datos para el tópico KPCL0021/pub con el formato especificado
     const kpcData = {
       device_id: "KPCL0021",
       timestamp: new Date().toISOString(),
