@@ -131,9 +131,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/mqtt/status', async (req: Request, res: Response) => {
     const connection = await storage.getMqttConnectionByUserId(1);
     if (connection) {
-      // Don't send password
-      const { password, ...safeConnection } = connection;
-      res.json(safeConnection);
+      // Don't send password or certificate information in the response
+      const { password, caCert, clientCert, privateKey, ...safeConnection } = connection;
+      
+      // Indicar sin revelar contenido si los certificados están presentes
+      const connectionInfo = {
+        ...safeConnection,
+        hasCaCert: !!caCert,
+        hasClientCert: !!clientCert,
+        hasPrivateKey: !!privateKey
+      };
+      
+      res.json(connectionInfo);
     } else {
       res.status(404).json({ message: 'MQTT connection not found' });
     }
@@ -149,11 +158,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         connection.brokerUrl,
         connection.clientId,
         connection.username || undefined,
-        connection.password || undefined
+        connection.password || undefined,
+        connection.caCert || undefined,
+        connection.clientCert || undefined,
+        connection.privateKey || undefined
       );
       
       if (success) {
-        res.status(201).json({ ...connection, connected: true });
+        // Excluir la contraseña y certificados confidenciales de la respuesta
+        const { password, caCert, clientCert, privateKey, ...safeConnection } = connection;
+        res.status(201).json({ ...safeConnection, connected: true });
       } else {
         res.status(400).json({ message: 'Failed to connect to MQTT broker' });
       }

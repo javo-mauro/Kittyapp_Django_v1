@@ -37,6 +37,9 @@ export const mqttConnections = pgTable("mqtt_connections", {
   clientId: text("client_id").notNull(),
   username: text("username"),
   password: text("password"),
+  caCert: text("ca_cert"),
+  clientCert: text("client_cert"),
+  privateKey: text("private_key"),
   connected: boolean("connected").default(false),
   lastConnected: timestamp("last_connected"),
 });

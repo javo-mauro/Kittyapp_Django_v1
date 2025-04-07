@@ -10,7 +10,15 @@ class MqttClient {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private webSockets: Set<WebSocket> = new Set();
 
-  async connect(brokerUrl: string, clientId: string, username?: string, password?: string) {
+  async connect(
+    brokerUrl: string, 
+    clientId: string, 
+    username?: string, 
+    password?: string,
+    caCert?: string,
+    clientCert?: string,
+    privateKey?: string
+  ) {
     try {
       if (this.client) {
         await this.disconnect();
@@ -25,9 +33,20 @@ class MqttClient {
         connectTimeout: 30000,
       };
 
+      // Autenticación estándar
       if (username && password) {
         connectOptions.username = username;
         connectOptions.password = password;
+      }
+      
+      // Autenticación con certificados (AWS IoT)
+      if (caCert && clientCert && privateKey) {
+        log('Using certificate authentication for MQTT connection', 'mqtt');
+        connectOptions.ca = caCert;
+        connectOptions.cert = clientCert;
+        connectOptions.key = privateKey;
+        connectOptions.protocol = 'mqtts';
+        connectOptions.rejectUnauthorized = true;
       }
 
       this.client = mqtt.connect(brokerUrl, connectOptions);
@@ -190,11 +209,12 @@ class MqttClient {
 
   private broadcastToClients(data: any) {
     const message = JSON.stringify(data);
-    for (const ws of this.webSockets) {
+    // Convert Set to Array before iteration to avoid ES2015 target issues
+    Array.from(this.webSockets).forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(message);
       }
-    }
+    });
   }
 
   async loadAndConnect() {
@@ -208,7 +228,10 @@ class MqttClient {
           connections.brokerUrl,
           connections.clientId,
           connections.username || undefined,
-          connections.password || undefined
+          connections.password || undefined,
+          connections.caCert || undefined,
+          connections.clientCert || undefined,
+          connections.privateKey || undefined
         );
         return true;
       } else {
@@ -221,8 +244,7 @@ class MqttClient {
         const newConnection = await storage.createMqttConnection({
           userId: 1,
           brokerUrl: defaultBrokerUrl, 
-          clientId: defaultClientId,
-          connected: false
+          clientId: defaultClientId
         });
         
         this.connectionId = newConnection.id;
