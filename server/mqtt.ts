@@ -211,10 +211,24 @@ class MqttClient {
           connections.password || undefined
         );
         return true;
+      } else {
+        // Use a public MQTT broker for testing if no connection is configured
+        log('No MQTT connection found in storage, using public test broker', 'mqtt');
+        const defaultBrokerUrl = 'mqtt://broker.emqx.io:1883';
+        const defaultClientId = `kitty-paw-${Math.random().toString(16).substring(2, 10)}`;
+        
+        // Create a default connection in storage
+        const newConnection = await storage.createMqttConnection({
+          userId: 1,
+          brokerUrl: defaultBrokerUrl, 
+          clientId: defaultClientId,
+          connected: false
+        });
+        
+        this.connectionId = newConnection.id;
+        await this.connect(defaultBrokerUrl, defaultClientId);
+        return true;
       }
-      
-      log('No MQTT connection found in storage', 'mqtt');
-      return false;
     } catch (error) {
       log(`Error loading MQTT connection: ${error}`, 'mqtt');
       return false;

@@ -12,6 +12,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
 import { useState, useEffect } from "react";
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -35,14 +36,16 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-[#FFFAF7]">
       <Header onMenuToggle={toggleSidebar} />
       
       <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          {children}
+          <div className="container mx-auto">
+            {children}
+          </div>
         </main>
       </div>
       
@@ -52,8 +55,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const [location] = useLocation();
-  
   return (
     <AppLayout>
       <Switch>
@@ -71,8 +72,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <WebSocketProvider>
+        <Router />
+        <Toaster />
+      </WebSocketProvider>
     </QueryClientProvider>
   );
 }

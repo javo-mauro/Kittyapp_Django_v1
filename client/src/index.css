@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Titan+One&family=Varela+Round&display=swap');
 
 @layer base {
   * {
@@ -8,6 +9,50 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-background text-foreground pt-20;
+    font-family: 'Varela Round', sans-serif;
+    color: #2A363B;
+  }
+
+  h1, h2, h3, .app-title {
+    font-family: 'Titan One', sans-serif;
+    color: #EBB7AA;
+  }
+
+  .navbar {
+    @apply bg-white shadow-md fixed top-0 left-0 right-0 z-50;
+  }
+
+  .card-data {
+    @apply bg-[#FF847C] text-[#2A363B] rounded-lg shadow-md;
+  }
+
+  .card-device {
+    @apply bg-[#EBB7AA] text-[#2A363B] rounded-lg shadow-md;
+  }
+
+  .card-info {
+    @apply bg-[#99B898] text-[#2A363B] rounded-lg shadow-md;
+  }
+
+  .btn-primary {
+    @apply bg-[#FF847C] hover:bg-[#ff6b61] text-white rounded-md;
+  }
+
+  .btn-secondary {
+    @apply bg-[#EBB7AA] hover:bg-[#e9a08d] text-white rounded-md;
+  }
+
+  /* Status indicators */
+  .status-active {
+    @apply bg-[#99B898];
+  }
+
+  .status-warning {
+    @apply bg-[#FECEAB];
+  }
+
+  .status-error {
+    @apply bg-[#E84A5F];
   }
 }
