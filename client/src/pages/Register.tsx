@@ -239,14 +239,14 @@ export default function Register() {
           className="w-full max-w-3xl"
         >
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="owner">Dueño</TabsTrigger>
-            <TabsTrigger value="pet" disabled={!ownerId}>Mascota</TabsTrigger>
+            <TabsTrigger value="owner" className="text-lg py-4 bg-[#FF9F8F] data-[state=active]:bg-[#FF947C] text-white">Dueño</TabsTrigger>
+            <TabsTrigger value="pet" disabled={!ownerId} className="text-lg py-4 bg-[#FBAFA4] data-[state=active]:bg-[#FF947C] text-white">Mascota</TabsTrigger>
           </TabsList>
 
           <TabsContent value="owner">
             <Card>
               <CardHeader>
-                <CardTitle>Registro de Dueño</CardTitle>
+                <CardTitle className="text-2xl font-bold text-[#F87A6D]">Registro de Dueño</CardTitle>
                 <CardDescription>
                   Por favor ingresa los datos del dueño de la mascota o inicia sesión con Google.
                 </CardDescription>
@@ -451,7 +451,7 @@ export default function Register() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full bg-gradient-to-r from-[#FF847C] to-[#EBB7AA] hover:from-[#EBB7AA] hover:to-[#FF847C]">
+                    <Button type="submit" className="w-full bg-[#FF897C] hover:bg-[#FF7A6C] text-white py-4 rounded-lg">
                       Registrar Dueño
                     </Button>
                   </form>
@@ -463,7 +463,7 @@ export default function Register() {
           <TabsContent value="pet">
             <Card>
               <CardHeader>
-                <CardTitle>Registro de Mascota</CardTitle>
+                <CardTitle className="text-2xl font-bold text-[#F87A6D]">Registro de Mascota</CardTitle>
                 <CardDescription>
                   Por favor ingresa los datos de tu mascota.
                 </CardDescription>
@@ -805,14 +805,14 @@ export default function Register() {
                       )}
                     </div>
 
-                    <Button type="submit" className="w-full bg-gradient-to-r from-[#FF847C] to-[#EBB7AA] hover:from-[#EBB7AA] hover:to-[#FF847C]">
+                    <Button type="submit" className="w-full bg-[#FF897C] hover:bg-[#FF7A6C] text-white py-4 rounded-lg">
                       Registrar Mascota
                     </Button>
                   </form>
                 </Form>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => setActiveTab("owner")}>
+                <Button variant="outline" onClick={() => setActiveTab("owner")} className="bg-[#FFDED9] hover:bg-[#FFD0C9] border-none text-[#FF7A6C] py-3 px-5 rounded-lg">
                   Volver a Dueño
                 </Button>
               </CardFooter>

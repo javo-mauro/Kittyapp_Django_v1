@@ -213,7 +213,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Datos recibidos del cliente:", owner);
       const newOwner = await storage.createPetOwner(owner);
       console.log("Nuevo dueño creado:", newOwner);
+      
+      // Asegurarse de que estamos enviando los encabezados correctos
+      res.setHeader('Content-Type', 'application/json');
       res.status(201).json(newOwner);
+      console.log("Respuesta enviada al cliente:", JSON.stringify(newOwner));
     } catch (error) {
       console.error('Error creating pet owner:', error);
       res.status(500).json({ message: 'Error al crear el dueño de mascota' });
@@ -289,8 +293,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/pets', async (req: Request, res: Response) => {
     try {
       const pet = req.body;
+      console.log("Datos de mascota recibidos:", pet);
       const newPet = await storage.createPet(pet);
+      console.log("Nueva mascota creada:", newPet);
+      
+      // Asegurarse de que estamos enviando los encabezados correctos
+      res.setHeader('Content-Type', 'application/json');
       res.status(201).json(newPet);
+      console.log("Respuesta enviada al cliente:", JSON.stringify(newPet));
     } catch (error) {
       console.error('Error creating pet:', error);
       res.status(500).json({ message: 'Error al crear la mascota' });
