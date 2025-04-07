@@ -1,0 +1,315 @@
+import {
+  users,
+  devices,
+  sensorData,
+  mqttConnections,
+  type User,
+  type InsertUser,
+  type Device,
+  type InsertDevice,
+  type SensorData,
+  type InsertSensorData,
+  type MqttConnection,
+  type InsertMqttConnection,
+  type SensorReading,
+  type SystemMetrics
+} from "@shared/schema";
+
+export interface IStorage {
+  // User operations
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUserLastLogin(id: number): Promise<void>;
+
+  // Device operations
+  getDevices(): Promise<Device[]>;
+  getDevice(id: number): Promise<Device | undefined>;
+  getDeviceByDeviceId(deviceId: string): Promise<Device | undefined>;
+  createDevice(device: InsertDevice): Promise<Device>;
+  updateDeviceStatus(deviceId: string, status: string): Promise<void>;
+  updateDeviceBattery(deviceId: string, batteryLevel: number): Promise<void>;
+
+  // Sensor data operations
+  getSensorData(deviceId: string, limit?: number): Promise<SensorData[]>;
+  getSensorDataByType(deviceId: string, sensorType: string, limit?: number): Promise<SensorData[]>;
+  createSensorData(data: InsertSensorData): Promise<SensorData>;
+  getLatestReadings(): Promise<SensorReading[]>;
+
+  // MQTT connection operations
+  getMqttConnection(id: number): Promise<MqttConnection | undefined>;
+  getMqttConnectionByUserId(userId: number): Promise<MqttConnection | undefined>;
+  createMqttConnection(connection: InsertMqttConnection): Promise<MqttConnection>;
+  updateMqttConnectionStatus(id: number, connected: boolean): Promise<void>;
+
+  // System operations
+  getSystemMetrics(): Promise<SystemMetrics>;
+}
+
+export class MemStorage implements IStorage {
+  private users: Map<number, User>;
+  private devices: Map<number, Device>;
+  private sensorData: SensorData[];
+  private mqttConnections: Map<number, MqttConnection>;
+  currentUserId: number;
+  currentDeviceId: number;
+  currentSensorDataId: number;
+  currentMqttConnectionId: number;
+
+  constructor() {
+    this.users = new Map();
+    this.devices = new Map();
+    this.sensorData = [];
+    this.mqttConnections = new Map();
+    this.currentUserId = 1;
+    this.currentDeviceId = 1;
+    this.currentSensorDataId = 1;
+    this.currentMqttConnectionId = 1;
+
+    // Add default admin user
+    this.createUser({
+      username: "admin",
+      password: "admin",
+      name: "Maria García",
+      role: "Administrator"
+    });
+
+    // Add some sample devices
+    this.createDevice({
+      deviceId: "ESP8266_01",
+      name: "Temperature & Humidity",
+      type: "Temperature & Humidity",
+      ipAddress: "192.168.1.10",
+      status: "online",
+      batteryLevel: 85
+    });
+
+    this.createDevice({
+      deviceId: "ESP8266_02",
+      name: "Light Sensor",
+      type: "Light Sensor",
+      ipAddress: "192.168.1.11",
+      status: "online",
+      batteryLevel: 72
+    });
+
+    this.createDevice({
+      deviceId: "ESP8266_03",
+      name: "Motion Sensor",
+      type: "Motion Sensor",
+      ipAddress: "192.168.1.12",
+      status: "warning",
+      batteryLevel: 23
+    });
+
+    this.createDevice({
+      deviceId: "ESP8266_04",
+      name: "Multi-Sensor",
+      type: "Multi-Sensor",
+      ipAddress: "192.168.1.13",
+      status: "offline",
+      batteryLevel: 0
+    });
+
+    // Create a default MQTT connection
+    this.createMqttConnection({
+      userId: 1,
+      brokerUrl: "mqtt://aws-iot-12345.com",
+      clientId: "kitty-paw-monitor",
+      username: "mqtt-user",
+      password: "mqtt-password"
+    });
+  }
+
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.username === username,
+    );
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = this.currentUserId++;
+    const now = new Date();
+    const user: User = { ...insertUser, id, lastLogin: now };
+    this.users.set(id, user);
+    return user;
+  }
+
+  async updateUserLastLogin(id: number): Promise<void> {
+    const user = this.users.get(id);
+    if (user) {
+      user.lastLogin = new Date();
+      this.users.set(id, user);
+    }
+  }
+
+  // Device operations
+  async getDevices(): Promise<Device[]> {
+    return Array.from(this.devices.values());
+  }
+
+  async getDevice(id: number): Promise<Device | undefined> {
+    return this.devices.get(id);
+  }
+
+  async getDeviceByDeviceId(deviceId: string): Promise<Device | undefined> {
+    return Array.from(this.devices.values()).find(
+      (device) => device.deviceId === deviceId,
+    );
+  }
+
+  async createDevice(insertDevice: InsertDevice): Promise<Device> {
+    const id = this.currentDeviceId++;
+    const now = new Date();
+    const device: Device = { ...insertDevice, id, lastUpdate: now };
+    this.devices.set(id, device);
+    return device;
+  }
+
+  async updateDeviceStatus(deviceId: string, status: string): Promise<void> {
+    const device = await this.getDeviceByDeviceId(deviceId);
+    if (device) {
+      device.status = status;
+      device.lastUpdate = new Date();
+      this.devices.set(device.id, device);
+    }
+  }
+
+  async updateDeviceBattery(deviceId: string, batteryLevel: number): Promise<void> {
+    const device = await this.getDeviceByDeviceId(deviceId);
+    if (device) {
+      device.batteryLevel = batteryLevel;
+      device.lastUpdate = new Date();
+      this.devices.set(device.id, device);
+    }
+  }
+
+  // Sensor data operations
+  async getSensorData(deviceId: string, limit = 100): Promise<SensorData[]> {
+    return this.sensorData
+      .filter(data => data.deviceId === deviceId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, limit);
+  }
+
+  async getSensorDataByType(deviceId: string, sensorType: string, limit = 100): Promise<SensorData[]> {
+    return this.sensorData
+      .filter(data => data.deviceId === deviceId && data.sensorType === sensorType)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, limit);
+  }
+
+  async createSensorData(insertData: InsertSensorData): Promise<SensorData> {
+    const id = this.currentSensorDataId++;
+    const now = new Date();
+    const data: SensorData = { ...insertData, id, timestamp: now };
+    this.sensorData.push(data);
+    
+    // Update device last update time and status
+    await this.updateDeviceStatus(insertData.deviceId, "online");
+    
+    return data;
+  }
+
+  async getLatestReadings(): Promise<SensorReading[]> {
+    const devices = await this.getDevices();
+    const readings: SensorReading[] = [];
+    
+    for (const device of devices) {
+      const deviceData = this.sensorData
+        .filter(data => data.deviceId === device.deviceId)
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      
+      // Group by sensor type to get the latest reading for each type
+      const sensorTypes = new Set(deviceData.map(data => data.sensorType));
+      
+      for (const type of sensorTypes) {
+        const latestData = deviceData.find(data => data.sensorType === type);
+        if (latestData) {
+          const data = latestData.data as any;
+          readings.push({
+            deviceId: device.deviceId,
+            sensorType: type,
+            value: data.value,
+            unit: data.unit,
+            timestamp: latestData.timestamp.toISOString()
+          });
+        }
+      }
+    }
+    
+    return readings;
+  }
+
+  // MQTT connection operations
+  async getMqttConnection(id: number): Promise<MqttConnection | undefined> {
+    return this.mqttConnections.get(id);
+  }
+
+  async getMqttConnectionByUserId(userId: number): Promise<MqttConnection | undefined> {
+    return Array.from(this.mqttConnections.values()).find(
+      (conn) => conn.userId === userId,
+    );
+  }
+
+  async createMqttConnection(insertConnection: InsertMqttConnection): Promise<MqttConnection> {
+    const id = this.currentMqttConnectionId++;
+    const now = new Date();
+    const connection: MqttConnection = { 
+      ...insertConnection, 
+      id, 
+      connected: false,
+      lastConnected: now 
+    };
+    this.mqttConnections.set(id, connection);
+    return connection;
+  }
+
+  async updateMqttConnectionStatus(id: number, connected: boolean): Promise<void> {
+    const connection = this.mqttConnections.get(id);
+    if (connection) {
+      connection.connected = connected;
+      if (connected) {
+        connection.lastConnected = new Date();
+      }
+      this.mqttConnections.set(id, connection);
+    }
+  }
+
+  // System operations
+  async getSystemMetrics(): Promise<SystemMetrics> {
+    const devices = await this.getDevices();
+    const activeDevices = devices.filter(device => device.status === "online").length;
+    
+    // Count unique sensor types across all devices
+    const sensorTypes = new Set<string>();
+    for (const data of this.sensorData) {
+      sensorTypes.add(`${data.deviceId}-${data.sensorType}`);
+    }
+    
+    // Count alerts (devices with warning status)
+    const alerts = devices.filter(device => device.status === "warning").length;
+    
+    // Find the latest update time
+    let lastUpdate = new Date(0);
+    for (const device of devices) {
+      if (device.lastUpdate && device.lastUpdate > lastUpdate) {
+        lastUpdate = device.lastUpdate;
+      }
+    }
+    
+    return {
+      activeDevices,
+      activeSensors: sensorTypes.size,
+      alerts,
+      lastUpdate: lastUpdate.toISOString()
+    };
+  }
+}
+
+export const storage = new MemStorage();
