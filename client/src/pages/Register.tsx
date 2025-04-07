@@ -111,10 +111,34 @@ export default function Register() {
 
       console.log("Respuesta del servidor:", result);
 
-      if (result && result.id) {
-        setOwnerId(result.id);
+      // Extraer el ID del dueño de la respuesta
+      let ownerIdValue: number | null = null;
+      
+      if (result && typeof result === 'object') {
+        // Verificamos si el resultado tiene una propiedad id
+        if ('id' in result && typeof result.id === 'number') {
+          ownerIdValue = result.id;
+          console.log("ID encontrado directamente:", ownerIdValue);
+        } else {
+          // Convertimos el resultado a any para buscar propiedades dinámicamente
+          const resultObj: any = result;
+          
+          // Buscamos cualquier propiedad que pueda ser un ID
+          for (const key in resultObj) {
+            if (key.toLowerCase().includes('id') && typeof resultObj[key] === 'number') {
+              ownerIdValue = resultObj[key];
+              console.log(`Encontrado posible ID en campo ${key}:`, ownerIdValue);
+              break;
+            }
+          }
+        }
+      }
+      
+      if (ownerIdValue) {
+        console.log("ID del dueño establecido:", ownerIdValue);
+        setOwnerId(ownerIdValue);
         // También actualizar el valor por defecto en el formulario de mascota
-        petForm.setValue("ownerId", result.id);
+        petForm.setValue("ownerId", ownerIdValue);
         
         toast({
           title: "Registro exitoso",
@@ -123,6 +147,7 @@ export default function Register() {
         // Cambiar a la pestaña de mascota
         setActiveTab("pet");
       } else {
+        console.error("No se pudo extraer un ID de la respuesta:", result);
         throw new Error("No se recibió un ID válido del servidor");
       }
     } catch (error) {

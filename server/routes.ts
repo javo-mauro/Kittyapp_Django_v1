@@ -210,7 +210,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/pet-owners', async (req: Request, res: Response) => {
     try {
       const owner = req.body;
+      console.log("Datos recibidos del cliente:", owner);
       const newOwner = await storage.createPetOwner(owner);
+      console.log("Nuevo dueño creado:", newOwner);
       res.status(201).json(newOwner);
     } catch (error) {
       console.error('Error creating pet owner:', error);

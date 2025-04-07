@@ -358,6 +358,7 @@ export class MemStorage implements IStorage {
 
   async createPetOwner(owner: InsertPetOwner): Promise<PetOwner> {
     const id = this.currentPetOwnerId++;
+    console.log(`Creando nuevo dueño con ID: ${id}, currentPetOwnerId: ${this.currentPetOwnerId}`);
     const now = new Date();
     const petOwner: PetOwner = {
       ...owner,
@@ -366,6 +367,7 @@ export class MemStorage implements IStorage {
       updatedAt: now
     };
     this.petOwners.set(id, petOwner);
+    console.log(`Dueño creado:`, petOwner);
     return petOwner;
   }
 
@@ -417,6 +419,7 @@ export class MemStorage implements IStorage {
 
   async createPet(pet: InsertPet): Promise<Pet> {
     const id = this.currentPetId++;
+    console.log(`Creando nueva mascota con ID: ${id}, currentPetId: ${this.currentPetId}, ownerId: ${pet.ownerId}`);
     const now = new Date();
     const newPet: Pet = {
       ...pet,
@@ -425,6 +428,7 @@ export class MemStorage implements IStorage {
       updatedAt: now
     };
     this.pets.set(id, newPet);
+    console.log(`Mascota creada:`, newPet);
     return newPet;
   }
 
