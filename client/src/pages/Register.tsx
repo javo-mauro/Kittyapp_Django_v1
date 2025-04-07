@@ -5,19 +5,21 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, RefreshCw } from "lucide-react";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useState } from "react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
+import { PetOwner, Pet } from "@shared/schema";
 
 // Esquema para validar el formulario de dueño de mascota
 const petOwnerFormSchema = z.object({
@@ -55,6 +57,17 @@ export default function Register() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("owner");
   const [ownerId, setOwnerId] = useState<number | null>(null);
+  
+  // Consultas para obtener propietarios y mascotas
+  const { data: petOwners = [], isLoading: isLoadingOwners, refetch: refetchOwners } = useQuery<PetOwner[]>({
+    queryKey: ['/api/pet-owners'],
+    enabled: true
+  });
+  
+  const { data: pets = [], isLoading: isLoadingPets, refetch: refetchPets } = useQuery<Pet[]>({
+    queryKey: ['/api/pets'],
+    enabled: true
+  });
 
   // Configuración del formulario de dueño de mascota
   const petOwnerForm = useForm<z.infer<typeof petOwnerFormSchema>>({
@@ -819,6 +832,105 @@ export default function Register() {
             </Card>
           </TabsContent>
         </Tabs>
+      </div>
+      
+      {/* Sección de listados de datos registrados */}
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-xl font-bold text-[#F87A6D]">
+                Propietarios Registrados
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => refetchOwners()}
+                className="h-8 w-8 p-0 rounded-full"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+            <CardDescription>
+              Listado de propietarios en el sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingOwners ? (
+              <div className="flex justify-center py-4">
+                <span className="animate-spin mr-2">⏳</span> Cargando...
+              </div>
+            ) : !Array.isArray(petOwners) || petOwners.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                No hay propietarios registrados
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Array.isArray(petOwners) && petOwners.map((owner) => (
+                  <div key={owner.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="font-medium">{owner.name} {owner.paternalLastName} {owner.maternalLastName}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      <div>📧 {owner.email}</div>
+                      <div>📍 {owner.address}</div>
+                      <div>🗓️ {new Date(owner.birthDate).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-xl font-bold text-[#F87A6D]">
+                Mascotas Registradas
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => refetchPets()}
+                className="h-8 w-8 p-0 rounded-full"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+            <CardDescription>
+              Listado de mascotas en el sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingPets ? (
+              <div className="flex justify-center py-4">
+                <span className="animate-spin mr-2">⏳</span> Cargando...
+              </div>
+            ) : !Array.isArray(pets) || pets.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                No hay mascotas registradas
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Array.isArray(pets) && pets.map((pet) => (
+                  <div key={pet.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="font-medium">{pet.name} - {pet.species} {pet.breed}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      <div>🔖 Microchip: {pet.chipNumber}</div>
+                      <div>🌟 Origen: {pet.origin}</div>
+                      {pet.kittyPawDeviceId && (
+                        <div>📟 Dispositivo: {pet.kittyPawDeviceId}</div>
+                      )}
+                      <div>
+                        {pet.hasVaccinations ? '✅ Vacunado' : '❌ Sin vacunas'} | 
+                        {pet.hasDiseases ? '⚠️ Con enfermedades' : '✅ Saludable'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
