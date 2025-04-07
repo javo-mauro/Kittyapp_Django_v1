@@ -144,7 +144,7 @@ export class MemStorage implements IStorage {
     // Create a default MQTT connection
     this.createMqttConnection({
       userId: 1,
-      brokerUrl: "mqtt://aws-iot-12345.com",
+      brokerUrl: "mqtt://a2fvfjwoybq3qw-ats.iot.us-east-2.amazonaws.com",
       clientId: "kitty-paw-monitor",
       username: "mqtt-user",
       password: "mqtt-password"
