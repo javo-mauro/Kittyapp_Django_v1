@@ -49,9 +49,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API routes
+  // Endpoint para inicio de sesión
+  app.post('/api/auth/login', async (req: Request, res: Response) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Se requiere nombre de usuario y contraseña' });
+      }
+      
+      // Buscar usuario por nombre de usuario
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Credenciales inválidas' });
+      }
+      
+      // Verificar contraseña (en una aplicación real usaríamos bcrypt)
+      if (user.password !== password) {
+        return res.status(401).json({ message: 'Credenciales inválidas' });
+      }
+      
+      // Actualizar último login
+      await storage.updateUserLastLogin(user.id);
+      
+      // Enviar usuario sin información sensible
+      const { password: _, ...safeUser } = user;
+      
+      res.json({
+        success: true,
+        user: safeUser
+      });
+    } catch (error) {
+      console.error('Error en login:', error);
+      res.status(500).json({ message: 'Error al procesar la solicitud de inicio de sesión' });
+    }
+  });
+  
+  app.post('/api/auth/logout', async (req: Request, res: Response) => {
+    // En una aplicación real, aquí invalidaríamos la sesión
+    res.json({ success: true, message: 'Sesión cerrada exitosamente' });
+  });
+  
   app.get('/api/user/current', async (req: Request, res: Response) => {
-    // Just return the first user for demo purposes
-    const user = await storage.getUser(1);
+    // En un sistema real, obtendríamos el ID del usuario de la sesión
+    // Por ahora, usamos el ID proporcionado en la solicitud, o el usuario 1 por defecto
+    const userId = parseInt(req.query.userId as string) || 1;
+    const user = await storage.getUser(userId);
+    
     if (user) {
       // Don't send password
       const { password, ...safeUser } = user;

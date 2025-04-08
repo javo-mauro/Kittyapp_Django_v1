@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, useRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -17,6 +17,7 @@ import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
 import { useState, useEffect } from "react";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -58,9 +59,34 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Componente para proteger rutas
+function PrivateRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, loading } = useAuth();
+  const [, navigate] = useRouter();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  // Mostrar un indicador de carga mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F87A6D]"></div>
+      </div>
+    );
+  }
+
+  // Si está autenticado, renderizar el componente
+  return isAuthenticated ? <Component /> : null;
+}
+
 function Router() {
   // Determina si la ruta es /login o /register para no mostrar el AppLayout en estas páginas
   const [location] = useLocation();
+  const { isAuthenticated } = useAuth();
   
   // Si estamos en la página de registro o login, no usamos el AppLayout
   if (location === "/register" || location === "/" || location === "/login") {
@@ -73,18 +99,34 @@ function Router() {
     );
   }
 
-  // Para las demás rutas, usamos el AppLayout normal
+  // Para las demás rutas, usamos el AppLayout normal con rutas protegidas
   return (
     <AppLayout>
       <Switch>
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/devices" component={Devices} />
-        <Route path="/sensors" component={Sensors} />
-        <Route path="/analytics" component={Analytics} />
-        <Route path="/alerts" component={Alerts} />
-        <Route path="/settings" component={Settings} />
-        <Route path="/users" component={Users} />
-        <Route component={NotFound} />
+        <Route path="/dashboard">
+          <PrivateRoute component={Dashboard} />
+        </Route>
+        <Route path="/devices">
+          <PrivateRoute component={Devices} />
+        </Route>
+        <Route path="/sensors">
+          <PrivateRoute component={Sensors} />
+        </Route>
+        <Route path="/analytics">
+          <PrivateRoute component={Analytics} />
+        </Route>
+        <Route path="/alerts">
+          <PrivateRoute component={Alerts} />
+        </Route>
+        <Route path="/settings">
+          <PrivateRoute component={Settings} />
+        </Route>
+        <Route path="/users">
+          <PrivateRoute component={Users} />
+        </Route>
+        <Route>
+          <NotFound />
+        </Route>
       </Switch>
     </AppLayout>
   );
@@ -93,10 +135,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
-        <Router />
-        <Toaster />
-      </WebSocketProvider>
+      <AuthProvider>
+        <WebSocketProvider>
+          <Router />
+          <Toaster />
+        </WebSocketProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

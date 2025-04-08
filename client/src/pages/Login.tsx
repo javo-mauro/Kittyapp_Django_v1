@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -24,7 +23,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 const loginFormSchema = z.object({
   username: z.string().min(2, {
@@ -36,8 +35,8 @@ const loginFormSchema = z.object({
 });
 
 export default function Login() {
-  const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
+  const { login, loading } = useAuth();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof loginFormSchema>>({
@@ -49,42 +48,22 @@ export default function Login() {
   });
 
   async function onSubmit(data: z.infer<typeof loginFormSchema>) {
-    setIsLoading(true);
     try {
-      // Aquí podríamos hacer la autenticación real, pero ahora solo simulamos
-      // una autenticación exitosa después de un breve retardo.
+      // Usamos el método login del contexto de autenticación
+      const success = await login(data.username, data.password);
       
-      // Para un login real, deberíamos usar algo como:
-      // await apiRequest('/api/auth/login', {
-      //   method: 'POST',
-      //   body: JSON.stringify(data),
-      // });
-      
-      // Por ahora, permitimos el login con admin/admin123 o jdayne/jdayne21
-      if ((data.username === 'admin' && data.password === 'admin123') || 
-          (data.username === 'jdayne' && data.password === 'jdayne21')) {
-        toast({
-          title: "Inicio de sesión exitoso",
-          description: "Bienvenido de nuevo!",
-        });
-        // Redirigir al dashboard
+      if (success) {
+        // Si el inicio de sesión fue exitoso, redirigimos al dashboard
         setLocation('/dashboard');
-      } else {
-        // Mostrar error de credenciales inválidas
-        toast({
-          variant: "destructive",
-          title: "Error de inicio de sesión",
-          description: "Credenciales inválidas. Intente nuevamente.",
-        });
       }
+      // No es necesario manejar errores aquí, el contexto de autenticación se encarga de mostrar los mensajes
     } catch (error) {
+      // Este bloque no debería ejecutarse normalmente, ya que el contexto maneja los errores
       toast({
         variant: "destructive",
-        title: "Error de inicio de sesión",
-        description: "Ocurrió un error al intentar iniciar sesión. Intente nuevamente.",
+        title: "Error inesperado",
+        description: "Ocurrió un error durante el inicio de sesión."
       });
-    } finally {
-      setIsLoading(false);
     }
   }
 
@@ -144,9 +123,9 @@ export default function Login() {
                 <Button 
                   type="submit" 
                   className="w-full bg-[#F87A6D] hover:bg-[#E56A5D]"
-                  disabled={isLoading}
+                  disabled={loading}
                 >
-                  {isLoading ? "Cargando..." : "Iniciar Sesión"}
+                  {loading ? "Cargando..." : "Iniciar Sesión"}
                 </Button>
               </form>
             </Form>
@@ -173,10 +152,8 @@ export default function Login() {
           <CardFooter className="flex flex-col space-y-2">
             <div className="text-center text-sm text-gray-500">
               ¿No tienes una cuenta?{" "}
-              <Link href="/register">
-                <a className="font-medium text-[#F87A6D] hover:underline">
-                  Regístrate aquí
-                </a>
+              <Link href="/register" className="font-medium text-[#F87A6D] hover:underline">
+                Regístrate aquí
               </Link>
             </div>
           </CardFooter>
