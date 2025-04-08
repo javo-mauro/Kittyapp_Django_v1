@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
+
+// Interfaces para tipos de respuesta del servidor
+interface LoginResponse {
+  success: boolean;
+  user: User;
+}
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -45,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      const response = await apiRequest('/api/auth/login', {
+      const response = await apiRequest<LoginResponse>('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

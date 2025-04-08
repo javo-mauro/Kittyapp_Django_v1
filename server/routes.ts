@@ -54,24 +54,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
       
+      console.log(`Intento de inicio de sesión para: ${username}`);
+      
       if (!username || !password) {
         return res.status(400).json({ message: 'Se requiere nombre de usuario y contraseña' });
       }
       
-      // Buscar usuario por nombre de usuario
-      const user = await storage.getUserByUsername(username);
+      // Intentar buscar primero como usuario regular
+      let user = await storage.getUserByUsername(username);
+      console.log(`Usuario regular encontrado: ${user ? 'Sí' : 'No'}`);
       
+      // Si no se encuentra como usuario regular, buscar como propietario de mascota
       if (!user) {
+        console.log(`Buscando como propietario de mascota: ${username}`);
+        const petOwner = await storage.getPetOwnerByUsername(username);
+        console.log(`Propietario encontrado: ${petOwner ? 'Sí' : 'No'}`);
+        
+        if (petOwner) {
+          console.log(`Detalles del propietario: ${JSON.stringify(petOwner)}`);
+        }
+        
+        // Si es un propietario de mascota, crear un objeto de usuario compatible
+        if (petOwner) {
+          user = {
+            id: petOwner.id,
+            username: petOwner.username,
+            password: petOwner.password,
+            name: `${petOwner.name} ${petOwner.paternalLastName}`,
+            role: 'owner',
+            lastLogin: petOwner.updatedAt.toISOString()
+          };
+          console.log(`Usuario creado desde propietario: ${JSON.stringify(user)}`);
+        }
+      }
+      
+      // Si no se encontró el usuario en ninguna de las dos formas
+      if (!user) {
+        console.log(`Usuario no encontrado: ${username}`);
         return res.status(401).json({ message: 'Credenciales inválidas' });
       }
       
       // Verificar contraseña (en una aplicación real usaríamos bcrypt)
       if (user.password !== password) {
+        console.log(`Contraseña incorrecta para: ${username}`);
         return res.status(401).json({ message: 'Credenciales inválidas' });
       }
       
-      // Actualizar último login
-      await storage.updateUserLastLogin(user.id);
+      // Si es un usuario regular, actualizar último login
+      if (await storage.getUser(user.id)) {
+        await storage.updateUserLastLogin(user.id);
+      }
       
       // Enviar usuario sin información sensible
       const { password: _, ...safeUser } = user;
