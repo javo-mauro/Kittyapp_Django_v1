@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation, useRouter } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -62,13 +62,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 // Componente para proteger rutas
 function PrivateRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, loading } = useAuth();
-  const [, navigate] = useRouter();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate("/login");
+      setLocation("/login");
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, loading, setLocation]);
 
   // Mostrar un indicador de carga mientras se verifica la autenticación
   if (loading) {
