@@ -5,7 +5,7 @@ import { log } from './vite';
 
 class MqttClient {
   private client: mqtt.MqttClient | null = null;
-  private topic: string = 'KPCL0021/pub';
+  private topics: Set<string> = new Set(['KPCL0021/pub']); // Conjunto de tópicos para suscribirse
   private connectionId: number | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private webSockets: Set<WebSocket> = new Set();
@@ -116,14 +116,35 @@ class MqttClient {
 
   private subscribe() {
     if (this.client && this.client.connected) {
-      // Suscribirse al tópico definido en la clase
-      this.client.subscribe(this.topic, (err) => {
-        if (!err) {
-          log(`Subscribed to topic: ${this.topic}`, 'mqtt');
-        } else {
-          log(`Error subscribing to topic: ${err.message}`, 'mqtt');
-        }
+      // Suscribirse a todos los tópicos del conjunto
+      Array.from(this.topics).forEach(topic => {
+        this.client!.subscribe(topic, (err) => {
+          if (!err) {
+            log(`Subscribed to topic: ${topic}`, 'mqtt');
+          } else {
+            log(`Error subscribing to topic: ${err.message}`, 'mqtt');
+          }
+        });
       });
+    }
+  }
+  
+  // Método para agregar un nuevo tópico y suscribirse
+  public addTopic(topic: string) {
+    if (!this.topics.has(topic)) {
+      this.topics.add(topic);
+      log(`Added new topic: ${topic}`, 'mqtt');
+      
+      // Si ya estamos conectados, suscribirse inmediatamente
+      if (this.client && this.client.connected) {
+        this.client.subscribe(topic, (err) => {
+          if (!err) {
+            log(`Subscribed to new topic: ${topic}`, 'mqtt');
+          } else {
+            log(`Error subscribing to new topic: ${err.message}`, 'mqtt');
+          }
+        });
+      }
     }
   }
 
@@ -132,11 +153,8 @@ class MqttClient {
       const message = messageBuffer.toString();
       log(`Received message on topic ${topic}: ${message}`, 'mqtt');
 
-      // Solo manejamos el tópico KPCL0021/pub
-      if (topic !== 'KPCL0021/pub') {
-        log(`Ignoring non-KPCL0021 topic: ${topic}`, 'mqtt');
-        return;
-      }
+      // Procesamos cualquier tópico al que estemos suscritos
+      // Verificamos si el formato del mensaje es correcto para un dispositivo KittyPaw
       
       try {
         // Parse message según formato: {"device_id": "THINGNAME", "timestamp": "...", "humidity": h, "temperature": t, "light": light, "weight": weight}
@@ -262,7 +280,7 @@ class MqttClient {
           metrics
         });
       } catch (error) {
-        log(`Error processing KPCL0021/pub message: ${error}`, 'mqtt');
+        log(`Error processing MQTT message on topic ${topic}: ${error}`, 'mqtt');
       }
     } catch (error) {
       log(`Error handling MQTT message: ${error}`, 'mqtt');

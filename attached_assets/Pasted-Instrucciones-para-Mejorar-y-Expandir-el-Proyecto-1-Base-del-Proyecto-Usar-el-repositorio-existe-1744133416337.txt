@@ -1,0 +1,58 @@
+Instrucciones para Mejorar y Expandir el Proyecto
+
+1. Base del Proyecto
+- Usar el repositorio existente: https://github.com/javo-mauro/KittyPawSensors
+- Mantener la estructura actual del proyecto y extender su funcionalidad.
+- Reutilizar formularios existentes para usuarios y mascotas.
+
+2. Autenticación y Usuarios
+- Mantener login con correo/contraseña e implementar login con Google (OAuth).
+- Al iniciar el sistema, eliminar todos los usuarios excepto:
+  - admin / admin123
+  - jdayne / jdayne21
+- Crear dos roles:
+  - Administrador: acceso total a usuarios, mascotas y dispositivos.
+  - Usuario Normal: acceso solo a su cuenta y sus mascotas/dispositivos.
+
+3. Gestión de Mascotas y Dispositivos
+- Cada usuario puede tener múltiples mascotas.
+- Cada mascota puede tener un único dispositivo IoT asociado.
+- Crear formulario para agregar dispositivos con:
+  - ID del Dispositivo
+  - Tópico MQTT (ej: KPCL0021/pub)
+  - Usuario asociado
+  - Mascota asociada
+  - Botón para guardar asociación
+
+4. Comunicación con MQTT
+- Usar la estructura MQTT ya existente en el proyecto.
+- Broker: a2fvfjwoybq3qw-ats.iot.us-east-2.amazonaws.com
+- Suscribirse dinámicamente a los tópicos de dispositivos.
+- Formato de datos recibidos (JSON):
+  {
+    "device_id": "THINGNAME",
+    "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+    "humidity": 0.0,
+    "temperature": 0.0,
+    "light": 0.0,
+    "weight": 0.0
+  }
+
+5. Visualización de Datos
+- Para cada mascota mostrar:
+  - Últimos valores de sensores: humedad (%), temperatura (°C), luz (lux), peso (kg).
+  - Gráficos de línea independientes por sensor.
+  - Mostrar las últimas 60 muestras (5 minutos).
+  - Autoactualización con cada nuevo mensaje MQTT.
+
+6. Funcionalidades de Administrador
+- Listar todos los usuarios registrados.
+- Agregar, editar y eliminar cualquier usuario, mascota o dispositivo.
+- Visualizar todos los datos disponibles del sistema.
+
+7. Ejemplo de Datos Iniciales
+- Usuario: jdayne
+- Mascota: malto
+- Dispositivo: KPCL0021
+- Tópico: KPCL0021/pub
+- Broker: a2fvfjwoybq3qw-ats.iot.us-east-2.amazonaws.com

@@ -2,13 +2,26 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useWebSocket } from '@/contexts/WebSocketContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function DeviceList() {
-  const { devices } = useWebSocket();
+  const { devices, fetchUserDevices } = useWebSocket();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Cargar sólo los dispositivos del usuario al montar el componente
+  useEffect(() => {
+    if (user) {
+      if (user.id && user.role === 'owner') {
+        fetchUserDevices(user.id);
+      } else if (user.username) {
+        fetchUserDevices(undefined, user.username);
+      }
+    }
+  }, [user, fetchUserDevices]);
   
   const filteredDevices = devices.filter(device => 
     device.deviceId.toLowerCase().includes(searchQuery.toLowerCase()) ||

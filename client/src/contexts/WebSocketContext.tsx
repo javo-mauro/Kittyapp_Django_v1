@@ -11,6 +11,7 @@ interface WebSocketContextType {
   devices: Device[];
   latestReadings: any[];
   sendMessage: (message: any) => void;
+  fetchUserDevices: (userId?: number, username?: string) => Promise<void>;
 }
 
 const WebSocketContext = createContext<WebSocketContextType>({
@@ -22,6 +23,7 @@ const WebSocketContext = createContext<WebSocketContextType>({
   devices: [],
   latestReadings: [],
   sendMessage: () => {},
+  fetchUserDevices: async () => {},
 });
 
 export const useWebSocket = () => useContext(WebSocketContext);
@@ -152,6 +154,42 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
     }
   };
+  
+  // Función para obtener dispositivos filtrados por usuario
+  const fetchUserDevices = useCallback(async (userId?: number, username?: string) => {
+    try {
+      // Construir la URL con parámetros de consulta si se proporcionan
+      let url = '/api/devices';
+      const params = new URLSearchParams();
+      
+      if (userId) {
+        params.append('userId', userId.toString());
+      }
+      
+      if (username) {
+        params.append('username', username);
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch devices');
+      }
+      
+      const userDevices = await response.json();
+      setDevices(userDevices);
+    } catch (error) {
+      console.error('Error fetching user devices:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los dispositivos del usuario',
+        variant: 'destructive',
+      });
+    }
+  }, []);
 
   useEffect(() => {
     initWebSocket();
@@ -179,7 +217,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         systemInfo,
         devices,
         latestReadings,
-        sendMessage
+        sendMessage,
+        fetchUserDevices
       }}
     >
       {children}

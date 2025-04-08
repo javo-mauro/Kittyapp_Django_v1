@@ -10,6 +10,7 @@ interface SensorChartProps {
   chartType?: 'line' | 'bar';
   height?: string;
   colorScheme?: string[];
+  deviceFilter?: string; // Para filtrar por dispositivo específico
 }
 
 export default function SensorChart({ 
@@ -17,7 +18,8 @@ export default function SensorChart({
   sensorType, 
   chartType = 'line', 
   height = 'h-64',
-  colorScheme = ['#3f51b5', '#ff4081', '#4caf50', '#ff9800']
+  colorScheme = ['#3f51b5', '#ff4081', '#4caf50', '#ff9800'],
+  deviceFilter
 }: SensorChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<Chart | null>(null);
@@ -30,8 +32,15 @@ export default function SensorChart({
     return savedHistory ? JSON.parse(savedHistory) : {};
   });
   
-  // Filter readings by sensor type
-  const readings = latestReadings.filter(reading => reading.sensorType === sensorType);
+  // Filter readings by sensor type and device if specified
+  const readings = latestReadings.filter(reading => {
+    const matchesSensorType = reading.sensorType === sensorType;
+    // Si hay un filtro de dispositivo, aplicarlo
+    if (deviceFilter) {
+      return matchesSensorType && reading.deviceId.toLowerCase() === deviceFilter;
+    }
+    return matchesSensorType;
+  });
   
   useEffect(() => {
     if (!chartRef.current) return;
@@ -139,6 +148,11 @@ export default function SensorChart({
     const updatedHistory = { ...readingsHistory };
     
     readings.forEach(reading => {
+      // Si hay un filtro de dispositivo, solo procesar ese dispositivo
+      if (deviceFilter && reading.deviceId.toLowerCase() !== deviceFilter) {
+        return;
+      }
+      
       if (!updatedHistory[reading.deviceId]) {
         updatedHistory[reading.deviceId] = [];
       }
@@ -161,7 +175,7 @@ export default function SensorChart({
     
     // Guardar el historial actualizado en localStorage
     localStorage.setItem(`sensor_history_${sensorType}`, JSON.stringify(updatedHistory));
-  }, [latestReadings, sensorType]);
+  }, [latestReadings, sensorType, deviceFilter]);
   
   // Actualizar el gráfico con los datos del historial
   useEffect(() => {
@@ -173,10 +187,14 @@ export default function SensorChart({
     const timeLabels = [];
     const now = new Date();
     
-    // Si tenemos suficientes datos en el historial, usamos esas marcas de tiempo
-    const anyDevice = Object.keys(readingsHistory)[0];
-    if (readingsHistory[anyDevice] && readingsHistory[anyDevice].length > 0) {
-      const deviceHistory = readingsHistory[anyDevice];
+    // Si hay un filtro de dispositivo, usar ese dispositivo para las etiquetas de tiempo
+    // Si no, usar el primer dispositivo disponible en el historial
+    const deviceToUse = deviceFilter ? 
+      Object.keys(readingsHistory).find(d => d.toLowerCase() === deviceFilter) :
+      Object.keys(readingsHistory)[0];
+    
+    if (deviceToUse && readingsHistory[deviceToUse] && readingsHistory[deviceToUse].length > 0) {
+      const deviceHistory = readingsHistory[deviceToUse];
       // Obtener las últimas 9 marcas de tiempo o menos si no hay suficientes
       const numLabels = Math.min(9, deviceHistory.length);
       
@@ -204,8 +222,21 @@ export default function SensorChart({
     
     chart.data.labels = timeLabels;
     
+    // Limpiar datasets existentes si hay filtro de dispositivo
+    if (deviceFilter) {
+      // Mantener solo los datasets del dispositivo filtrado
+      chart.data.datasets = chart.data.datasets.filter(
+        ds => ds.label.toLowerCase() === deviceFilter
+      );
+    }
+    
     // Actualizar cada conjunto de datos con los datos del historial
     Object.entries(readingsHistory).forEach(([deviceId, deviceReadings]) => {
+      // Si hay filtro de dispositivo y este no es el dispositivo, ignorar
+      if (deviceFilter && deviceId.toLowerCase() !== deviceFilter) {
+        return;
+      }
+      
       // Buscar el índice del conjunto de datos para este dispositivo
       let datasetIndex = chart.data.datasets.findIndex(ds => ds.label === deviceId);
       
@@ -245,7 +276,7 @@ export default function SensorChart({
     });
     
     chart.update();
-  }, [readingsHistory, chartType, colorScheme]);
+  }, [readingsHistory, chartType, colorScheme, deviceFilter]);
   
   return (
     <Card className="overflow-hidden">

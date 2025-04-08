@@ -234,8 +234,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/devices', async (req: Request, res: Response) => {
-    const devices = await storage.getDevices();
-    res.json(devices);
+    try {
+      // Verificar si se solicitan dispositivos para un usuario específico
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const username = req.query.username as string || null;
+      
+      // Obtener todos los dispositivos
+      const allDevices = await storage.getDevices();
+      
+      // Si no hay filtro, devolver todos los dispositivos (sólo para admin)
+      if (!userId && !username) {
+        res.json(allDevices);
+        return;
+      }
+      
+      // Filtrar dispositivos según el usuario
+      let filteredDevices = allDevices;
+      
+      // Si el usuario es "javier" o tiene userId=2, solo mostrar el dispositivo KPCL0021
+      if (username === 'javier' || userId === 2) {
+        filteredDevices = allDevices.filter(device => device.deviceId === 'KPCL0021');
+      }
+      // Para otros usuarios, filtrar según las mascotas que tengan asociadas
+      else if (userId) {
+        // Obtener las mascotas del usuario
+        const ownerPets = await storage.getPetsByOwnerId(userId);
+        
+        // Filtrar dispositivos que estén asociados con las mascotas del propietario
+        if (ownerPets.length > 0) {
+          const petDeviceIds = ownerPets
+            .filter(pet => pet.kittyPawDeviceId)
+            .map(pet => pet.kittyPawDeviceId);
+          
+          filteredDevices = allDevices.filter(device => 
+            petDeviceIds.includes(device.deviceId)
+          );
+        } else {
+          // Si el propietario no tiene mascotas, no mostrar dispositivos
+          filteredDevices = [];
+        }
+      }
+      
+      res.json(filteredDevices);
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+      res.status(500).json({ message: 'Error retrieving devices' });
+    }
   });
 
   app.post('/api/devices', async (req: Request, res: Response) => {
@@ -335,6 +379,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         connection.clientCert || undefined,
         connection.privateKey || undefined
       );
+      
+      // Si se proporcionó un tópico adicional, suscribirse a él
+      if (success && req.body.topic) {
+        mqttClient.addTopic(req.body.topic);
+      }
       
       if (success) {
         // Excluir la contraseña y certificados confidenciales de la respuesta
@@ -523,6 +572,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para suscribirse a un nuevo tópico MQTT
+  app.post('/api/mqtt/subscribe', async (req: Request, res: Response) => {
+    try {
+      const { topic } = req.body;
+      
+      if (!topic) {
+        return res.status(400).json({ error: "MQTT topic is required" });
+      }
+      
+      mqttClient.addTopic(topic);
+      return res.json({ success: true, message: `Subscribed to topic: ${topic}` });
+    } catch (error) {
+      console.error("Error subscribing to MQTT topic:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
   // Initialize the MQTT client
   await mqttClient.loadAndConnect();
 
