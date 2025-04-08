@@ -97,50 +97,15 @@ export class MemStorage implements IStorage {
     this.currentPetOwnerId = 1;
     this.currentPetId = 1;
 
-    // Add default admin user
+    // Establecer a Javier Dayne como administrador
     this.createUser({
       username: "admin",
       password: "admin123",
-      name: "Maria García",
+      name: "Javier Dayne",
       role: "Administrator"
     });
 
-    // Add some sample devices
-    this.createDevice({
-      deviceId: "ESP8266_01",
-      name: "Temperature & Humidity",
-      type: "Temperature & Humidity",
-      ipAddress: "192.168.1.10",
-      status: "online",
-      batteryLevel: 85
-    });
-
-    this.createDevice({
-      deviceId: "ESP8266_02",
-      name: "Light Sensor",
-      type: "Light Sensor",
-      ipAddress: "192.168.1.11",
-      status: "online",
-      batteryLevel: 72
-    });
-
-    this.createDevice({
-      deviceId: "ESP8266_03",
-      name: "Motion Sensor",
-      type: "Motion Sensor",
-      ipAddress: "192.168.1.12",
-      status: "warning",
-      batteryLevel: 23
-    });
-
-    this.createDevice({
-      deviceId: "ESP8266_04",
-      name: "Multi-Sensor",
-      type: "Multi-Sensor",
-      ipAddress: "192.168.1.13",
-      status: "offline",
-      batteryLevel: 0
-    });
+    // Solo mantenemos el dispositivo KPCL0021 asociado a la mascota de Javier
 
     // Agregar un propietario de mascota por defecto
     const petOwner = this.createPetOwner({
