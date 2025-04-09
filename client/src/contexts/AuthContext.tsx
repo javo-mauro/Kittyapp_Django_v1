@@ -143,8 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: `Ahora estás usando la cuenta de ${response.user.name || response.user.username}`,
         });
         
-        // Redireccionar al dashboard después de cambiar de usuario
-        setLocation('/');
+        // Redireccionar a la página de usuarios para que vea su información
+        setLocation('/users');
         
         return true;
       } else {
