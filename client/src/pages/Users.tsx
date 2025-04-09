@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Search, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface User {
   id: number;
@@ -162,9 +163,8 @@ export default function Users() {
   const fetchUserDevices = async (username: string) => {
     try {
       setDetailsLoading(true);
-      const fetchedDevices = await apiRequest<Device[]>("/api/devices");
-      // Filtramos solo los dispositivos asociados con el usuario actual
-      // Nota: Esto es un ejemplo, debe ajustarse según la implementación real
+      // Usamos el parámetro de consulta para filtrar los dispositivos por usuario
+      const fetchedDevices = await apiRequest<Device[]>(`/api/devices?username=${username}`);
       setDevices(fetchedDevices);
       
       // Limpiamos los datos de sensores cuando se cambia de usuario

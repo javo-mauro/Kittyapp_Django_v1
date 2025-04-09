@@ -1,10 +1,11 @@
 import * as React from "react";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, parse, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -22,43 +23,78 @@ interface CustomCalendarProps {
 }
 
 export function CustomCalendar({ field, label, placeholder = "Seleccionar fecha" }: CustomCalendarProps) {
+  const [inputValue, setInputValue] = React.useState<string>(
+    field.value ? format(field.value, "dd/MM/yyyy") : ""
+  );
+
+  // Actualizar el inputValue cuando cambia el valor del campo
+  React.useEffect(() => {
+    if (field.value) {
+      setInputValue(format(field.value, "dd/MM/yyyy"));
+    } else {
+      setInputValue("");
+    }
+  }, [field.value]);
+
+  // Manejar cambio en el input
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+    
+    // Intentar parsear la fecha
+    if (value) {
+      try {
+        const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+        if (isValid(parsedDate)) {
+          field.onChange(parsedDate);
+        }
+      } catch (error) {
+        // No hacer nada si hay un error al parsear
+      }
+    } else {
+      // Si el campo está vacío, establecer el valor a undefined
+      field.onChange(undefined);
+    }
+  };
+
   return (
     <FormItem className="flex flex-col">
       <FormLabel>{label}</FormLabel>
-      <Popover>
-        <PopoverTrigger asChild>
-          <FormControl>
+      <div className="flex items-center gap-2">
+        <FormControl>
+          <Input
+            value={inputValue}
+            onChange={handleInputChange}
+            placeholder="DD/MM/YYYY"
+            className="flex-1"
+          />
+        </FormControl>
+        <Popover>
+          <PopoverTrigger asChild>
             <Button
               variant={"outline"}
-              className={cn(
-                "w-full pl-3 text-left font-normal",
-                !field.value && "text-muted-foreground"
-              )}
+              type="button"
+              className="p-2"
             >
-              {field.value ? (
-                format(field.value, "PPP", { locale: es })
-              ) : (
-                <span>{placeholder}</span>
-              )}
-              <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
+              <CalendarIcon className="w-4 h-4 opacity-70" />
             </Button>
-          </FormControl>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={field.value}
-            onSelect={field.onChange}
-            disabled={(date) =>
-              date > new Date() || date < new Date("1900-01-01")
-            }
-            initialFocus
-            captionLayout="dropdown-buttons"
-            fromYear={1920}
-            toYear={2025}
-          />
-        </PopoverContent>
-      </Popover>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="single"
+              selected={field.value}
+              onSelect={field.onChange}
+              disabled={(date) =>
+                date > new Date() || date < new Date("1900-01-01")
+              }
+              initialFocus
+              captionLayout="dropdown-buttons"
+              fromYear={1920}
+              toYear={2025}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
       <FormMessage />
     </FormItem>
   );
