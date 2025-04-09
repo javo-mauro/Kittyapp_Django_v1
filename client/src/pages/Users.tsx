@@ -204,27 +204,19 @@ export default function Users() {
     }
   };
 
-  // Función para cambiar al usuario seleccionado
+  // Función para cambiar al usuario seleccionado usando el contexto de autenticación
+  const { switchUser } = useAuth();
   const handleSwitchUser = async (username: string) => {
     try {
-      // Enviar solicitud para cambiar de usuario
-      await apiRequest("/api/auth/switch-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username }),
-      });
-
-      toast({
-        title: "Usuario cambiado",
-        description: `Has cambiado al usuario ${username}. Redirigiendo...`,
-      });
-
-      // Redirigir a la página principal después de un breve retraso
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 1500);
+      const success = await switchUser(username);
+      
+      if (!success) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo cambiar al usuario seleccionado.",
+        });
+      }
     } catch (error) {
       console.error("Error al cambiar de usuario:", error);
       toast({

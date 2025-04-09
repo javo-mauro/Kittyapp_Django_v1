@@ -141,11 +141,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users', async (req: Request, res: Response) => {
     try {
       // Obtener todos los usuarios del sistema desde el storage
+      // Ahora solo mostramos a Javier Dayne como administrador
       const users = [
-        { id: 1, username: 'admin', name: 'Maria García', role: 'admin', lastLogin: new Date().toISOString() },
-        { id: 2, username: 'javier', name: 'Javier Dayne', role: 'owner', lastLogin: new Date().toISOString() },
-        { id: 3, username: 'tecnician1', name: 'Carlos Rodríguez', role: 'technician', lastLogin: new Date().toISOString() },
-        { id: 4, username: 'veterinarian1', name: 'Ana Martínez', role: 'vet', lastLogin: new Date().toISOString() }
+        { id: 1, username: 'admin', name: 'Javier Dayne', role: 'admin', lastLogin: new Date().toISOString() },
+        { id: 2, username: 'jdayne', name: 'Javier Dayne', role: 'owner', lastLogin: new Date().toISOString() },
       ];
       
       res.json(users);
@@ -162,14 +161,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Se requiere el nombre de usuario' });
       }
 
-      // En una implementación real, aquí verificaríamos si el usuario existe y cambiaríamos la sesión
       // Para este ejemplo, simulamos un cambio de usuario exitoso
-      if (username === 'javier') {
+      // Solo permitimos cambiar entre admin y jdayne
+      if (username === 'admin' || username === 'jdayne') {
         // Verificar si ya existe el dispositivo
         const existingDevice = await storage.getDeviceByDeviceId('KPCL0021');
         
         if (!existingDevice) {
-          // Asociamos un dispositivo específico al usuario Javier
+          // Asociamos un dispositivo específico al usuario
           const device = {
             deviceId: 'KPCL0021',
             name: 'KittyPaw de Malto',
@@ -219,14 +218,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
-      }
 
-      // Enviamos respuesta exitosa
-      res.json({ 
-        success: true, 
-        message: `Has cambiado al usuario ${username}`,
-        user: { username, role: username === 'admin' ? 'admin' : 'owner' }
-      });
+        let role = 'owner';
+        let name = 'Javier Dayne';
+        if (username === 'admin') {
+          role = 'admin';
+        }
+
+        // Enviamos respuesta completa con toda la info del usuario
+        res.json({ 
+          success: true, 
+          message: `Has cambiado al usuario ${username}`,
+          user: { 
+            id: username === 'admin' ? 1 : 2,
+            username, 
+            name,
+            role, 
+            lastLogin: new Date().toISOString() 
+          }
+        });
+      } else {
+        res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+      }
     } catch (error) {
       console.error('Error switching user:', error);
       res.status(500).json({ message: 'Error al cambiar de usuario' });
@@ -251,8 +264,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filtrar dispositivos según el usuario
       let filteredDevices = allDevices;
       
-      // Si el usuario es "javier" o tiene userId=2, solo mostrar el dispositivo KPCL0021
-      if (username === 'javier' || userId === 2) {
+      // Si el usuario es "jdayne" o tiene userId=2, solo mostrar el dispositivo KPCL0021
+      if (username === 'jdayne' || userId === 2) {
         filteredDevices = allDevices.filter(device => device.deviceId === 'KPCL0021');
       }
       // Para otros usuarios, filtrar según las mascotas que tengan asociadas

@@ -6,6 +6,7 @@ import { apiRequest } from '@/lib/queryClient';
 interface LoginResponse {
   success: boolean;
   user: User;
+  message?: string;
 }
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,6 +24,7 @@ interface AuthContextType {
   loading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  switchUser: (username: string) => Promise<boolean>;
   isAuthenticated: boolean;
 }
 
@@ -119,6 +121,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   };
+  
+  const switchUser = async (username: string): Promise<boolean> => {
+    setLoading(true);
+    try {
+      const response = await apiRequest<LoginResponse>('/api/auth/switch-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      if (response && response.success) {
+        // Guardar información del usuario
+        setUser(response.user);
+        sessionStorage.setItem('currentUser', JSON.stringify(response.user));
+        
+        toast({
+          title: "Cambio de usuario exitoso",
+          description: `Ahora estás usando la cuenta de ${response.user.name || response.user.username}`,
+        });
+        
+        // Redireccionar al dashboard después de cambiar de usuario
+        setLocation('/');
+        
+        return true;
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error al cambiar de usuario",
+          description: response?.message || "No se pudo cambiar de usuario",
+        });
+        return false;
+      }
+    } catch (error) {
+      let errorMessage = "Ocurrió un error al intentar cambiar de usuario";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
+      });
+      
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AuthContext.Provider value={{
@@ -126,6 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       login,
       logout,
+      switchUser,
       isAuthenticated: !!user,
     }}>
       {children}
