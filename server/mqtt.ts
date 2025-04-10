@@ -131,6 +131,12 @@ class MqttClient {
   
   // Método para agregar un nuevo tópico y suscribirse
   public addTopic(topic: string) {
+    // Asegurarse de que si el tópico es un ID de dispositivo, tenga el formato correcto con /pub
+    if (!topic.includes('/')) {
+      topic = `${topic}/pub`;
+      log(`Formateando tópico como ${topic} para asegurar el formato correcto`, 'mqtt');
+    }
+    
     if (!this.topics.has(topic)) {
       this.topics.add(topic);
       log(`Added new topic: ${topic}`, 'mqtt');

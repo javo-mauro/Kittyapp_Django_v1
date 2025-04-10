@@ -299,6 +299,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const deviceData = insertDeviceSchema.parse(req.body);
       const device = await storage.createDevice(deviceData);
+      
+      // Suscribirnos al tópico del dispositivo recién creado
+      if (device && device.deviceId) {
+        mqttClient.addTopic(device.deviceId);
+        log(`Auto-subscribing to new device topic: ${device.deviceId}`, 'express');
+      }
+      
       res.status(201).json(device);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -530,6 +537,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Datos de mascota recibidos:", pet);
       const newPet = await storage.createPet(pet);
       console.log("Nueva mascota creada:", newPet);
+      
+      // Si la mascota tiene un dispositivo KittyPaw asociado, suscribirnos al topic
+      if (newPet.kittyPawDeviceId) {
+        mqttClient.addTopic(newPet.kittyPawDeviceId);
+        log(`Auto-subscribing to pet's KittyPaw device topic: ${newPet.kittyPawDeviceId}`, 'express');
+      }
       
       // Asegurarse de que estamos enviando los encabezados correctos
       res.setHeader('Content-Type', 'application/json');
