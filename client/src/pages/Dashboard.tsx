@@ -99,7 +99,7 @@ export default function Dashboard() {
           chartType="line"
           height="h-64"
           colorScheme={['#2A363B', '#FF847C']}
-          deviceFilter={deviceFilter === 'all' ? undefined : deviceFilter}
+          deviceFilter={deviceFilter}
         />
       </div>
 
@@ -111,7 +111,7 @@ export default function Dashboard() {
             chartType="line"
             height="h-48"
             colorScheme={['#99B898']}
-            deviceFilter={deviceFilter === 'all' ? undefined : deviceFilter}
+            deviceFilter={deviceFilter}
           />
         </div>
 
@@ -122,7 +122,7 @@ export default function Dashboard() {
             chartType="bar"
             height="h-48"
             colorScheme={['#FF847C']}
-            deviceFilter={deviceFilter === 'all' ? undefined : deviceFilter}
+            deviceFilter={deviceFilter}
           />
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function Dashboard() {
           chartType="line"
           height="h-48"
           colorScheme={['#EBB7AA']}
-          deviceFilter={deviceFilter === 'all' ? undefined : deviceFilter}
+          deviceFilter={deviceFilter}
         />
       </div>
 

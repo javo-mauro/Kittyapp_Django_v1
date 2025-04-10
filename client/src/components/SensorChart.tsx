@@ -4,6 +4,17 @@ import { Card } from '@/components/ui/card';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import { format } from 'date-fns';
 
+// Función para mostrar nombres más amigables para los dispositivos
+const getDeviceDisplayName = (deviceId: string): string => {
+  const deviceMap: Record<string, string> = {
+    'kpcl0021': 'Collar Malto',
+    'kpcl0022': 'Collar Luna',
+  };
+  
+  const normalizedDeviceId = deviceId.toLowerCase();
+  return deviceMap[normalizedDeviceId] || deviceId;
+};
+
 interface SensorChartProps {
   title: string;
   sensorType: string;
@@ -309,7 +320,7 @@ export default function SensorChart({
       }
       
       // Buscar el índice del conjunto de datos para este dispositivo
-      let datasetIndex = chart.data.datasets.findIndex(ds => ds.label === deviceId);
+      let datasetIndex = chart.data.datasets.findIndex(ds => ds.label === getDeviceDisplayName(deviceId));
       
       // Si no existe el dataset para este dispositivo, lo creamos
       if (datasetIndex === -1 && deviceReadings.length > 0) {
