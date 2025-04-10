@@ -62,7 +62,7 @@ export default function Devices() {
     }
   }, [selectedDevice]);
 
-  // Effect para cargar las mascotas cuando se selecciona un propietario
+  // Effect para cargar las mascotas cuando se selecciona un usuario
   useEffect(() => {
     if (selectedPetOwner) {
       fetch(`/api/pet-owners/${selectedPetOwner}/pets`)
@@ -74,7 +74,7 @@ export default function Devices() {
           console.error('Error fetching pets:', error);
           toast({
             title: 'Error',
-            description: 'No se pudieron cargar las mascotas del propietario',
+            description: 'No se pudieron cargar las mascotas del usuario',
             variant: 'destructive'
           });
         });
@@ -178,7 +178,7 @@ export default function Devices() {
             variant="default" 
             onClick={() => {
               setIsCreateModalOpen(true);
-              // Cargar los propietarios de mascotas
+              // Cargar los usuarios con mascotas
               fetch('/api/pet-owners')
                 .then(res => res.json())
                 .then(data => {
@@ -188,7 +188,7 @@ export default function Devices() {
                   console.error('Error fetching pet owners:', error);
                   toast({
                     title: 'Error',
-                    description: 'No se pudieron cargar los propietarios de mascotas',
+                    description: 'No se pudieron cargar los usuarios con mascotas',
                     variant: 'destructive'
                   });
                 });
@@ -573,7 +573,7 @@ export default function Devices() {
                 onValueChange={(value) => setSelectedPetOwner(value ? parseInt(value) : null)}
               >
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Seleccionar propietario" />
+                  <SelectValue placeholder="Seleccionar usuario" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">Ninguno</SelectItem>

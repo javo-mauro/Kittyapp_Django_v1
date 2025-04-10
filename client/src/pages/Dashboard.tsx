@@ -18,7 +18,7 @@ export default function Dashboard() {
   // Cargar los dispositivos del usuario al montar el componente
   useEffect(() => {
     if (user) {
-      // Si el usuario tiene un ID y es propietario, filtrar por ID de usuario
+      // Si el usuario tiene un ID, filtrar por ID de usuario
       if (user.id && user.role === 'owner') {
         fetchUserDevices(user.id);
       }
