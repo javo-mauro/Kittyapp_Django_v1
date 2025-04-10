@@ -93,7 +93,7 @@ export default function Users() {
     }
   }, [searchTerm, users]);
 
-  // Eliminamos la función de obtener mascotas por propietario, ya no la usamos
+  // Eliminamos la función de obtener mascotas por usuario, ya no la usamos
 
   // Función para obtener los dispositivos asociados a un usuario
   const fetchUserDevices = async (username: string) => {
@@ -257,7 +257,7 @@ export default function Users() {
     );
   };
 
-  // Ya no necesitamos renderizar detalles de propietarios
+  // Ya no necesitamos renderizar detalles adicionales de usuarios
 
   return (
     <div className="container py-8">
