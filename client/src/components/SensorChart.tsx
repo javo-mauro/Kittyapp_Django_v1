@@ -33,15 +33,34 @@ export default function SensorChart({
   });
   
   // Filter readings by sensor type and device if specified
-  const readings = latestReadings.filter(reading => {
+  const filteredReadings = latestReadings.filter(reading => {
+    // Primero verificar que el tipo de sensor coincide
     const matchesSensorType = reading.sensorType === sensorType;
+    if (!matchesSensorType) return false;
+    
     // Si hay un filtro de dispositivo, aplicarlo
     if (deviceFilter) {
-      return matchesSensorType && reading.deviceId.toLowerCase() === deviceFilter;
+      return reading.deviceId.toLowerCase() === deviceFilter.toLowerCase();
     }
-    return matchesSensorType;
+    
+    // Si no hay filtro, incluir todos los tipos de sensores coincidentes
+    return true;
   });
+
+  // Esto recreará el gráfico cada vez que cambie el filtro de dispositivo
+  useEffect(() => {
+    if (!chartRef.current) return;
+    
+    // Forzar la recreación del gráfico cuando cambia el filtro
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+      chartInstance.current = null;
+    }
+    
+    // La recreación se hará en el siguiente efecto
+  }, [deviceFilter]);
   
+  // Crear o actualizar el gráfico
   useEffect(() => {
     if (!chartRef.current) return;
     
@@ -53,9 +72,9 @@ export default function SensorChart({
       chartInstance.current.destroy();
     }
     
-    // Group readings by device
+    // Group readings by device (solo los filtrados)
     const deviceReadings: Record<string, any[]> = {};
-    readings.forEach(reading => {
+    filteredReadings.forEach(reading => {
       if (!deviceReadings[reading.deviceId]) {
         deviceReadings[reading.deviceId] = [];
       }
@@ -66,33 +85,39 @@ export default function SensorChart({
     const now = new Date();
     const labels = Array.from({ length: 9 }, (_, i) => {
       const d = new Date(now);
-      d.setHours(d.getHours() - 8 + i);
-      return d.getHours() + ':00';
+      d.setMinutes(d.getMinutes() - 8 + i);
+      return format(d, 'HH:mm:ss');
     });
     
-    // Generate datasets
+    // Generate datasets (solo para los dispositivos filtrados)
     const datasets = Object.entries(deviceReadings).map(([deviceId, data], index) => {
+      // Si hay un filtro de dispositivo y este no es el dispositivo, ignorar
+      if (deviceFilter && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
+        return null;
+      }
+      
       return {
         label: deviceId,
         data: Array.from({ length: 9 }, (_, i) => {
-          // Add some random data for visualization
-          return Math.random() * 10 + (sensorType === 'temperature' ? 20 : 
-                                      sensorType === 'humidity' ? 45 : 
-                                      sensorType === 'light' ? 500 : 0);
+          // Proporcionar valores iniciales razonables basados en el tipo de sensor
+          return sensorType === 'temperature' ? 22 + Math.random() * 2 : 
+                sensorType === 'humidity' ? 50 + Math.random() * 5 : 
+                sensorType === 'light' ? 500 + Math.random() * 100 :
+                sensorType === 'weight' ? 200 + Math.random() * 50 : 0;
         }),
         borderColor: colorScheme[index % colorScheme.length],
         backgroundColor: `${colorScheme[index % colorScheme.length]}1A`, // Add 10% opacity
         tension: 0.3,
         fill: chartType === 'line',
       };
-    });
+    }).filter(Boolean);
     
     // Create the chart
     chartInstance.current = new Chart(ctx, {
       type: chartType,
       data: {
         labels,
-        datasets,
+        datasets: datasets as any[],
       },
       options: {
         responsive: true,
@@ -100,6 +125,7 @@ export default function SensorChart({
         plugins: {
           legend: {
             position: 'top',
+            display: !deviceFilter, // Ocultar leyenda si hay un dispositivo filtrado
           },
           tooltip: {
             mode: 'index',
@@ -110,21 +136,24 @@ export default function SensorChart({
           y: {
             title: {
               display: true,
-              text: sensorType === 'temperature' ? 'Temperature (°C)' : 
-                   sensorType === 'humidity' ? 'Humidity (%)' : 
-                   sensorType === 'light' ? 'Light Intensity (lux)' : 'Value',
+              text: sensorType === 'temperature' ? 'Temperatura (°C)' : 
+                   sensorType === 'humidity' ? 'Humedad (%)' : 
+                   sensorType === 'light' ? 'Intensidad de Luz (lux)' : 
+                   sensorType === 'weight' ? 'Peso (g)' : 'Valor',
             },
             suggestedMin: sensorType === 'temperature' ? 15 : 
                          sensorType === 'humidity' ? 30 : 
-                         sensorType === 'light' ? 0 : 0,
+                         sensorType === 'light' ? 0 : 
+                         sensorType === 'weight' ? 0 : 0,
             suggestedMax: sensorType === 'temperature' ? 30 : 
                          sensorType === 'humidity' ? 80 : 
-                         sensorType === 'light' ? 1500 : 100,
+                         sensorType === 'light' ? 1500 : 
+                         sensorType === 'weight' ? 600 : 100,
           },
           x: {
             title: {
               display: true,
-              text: 'Time',
+              text: 'Tiempo',
             }
           }
         }
@@ -138,18 +167,18 @@ export default function SensorChart({
         chartInstance.current = null;
       }
     };
-  }, [readings, sensorType, chartType, colorScheme]);
+  }, [filteredReadings, sensorType, chartType, colorScheme, deviceFilter]);
   
   // Actualizar el historial de lecturas cuando cambien los datos
   useEffect(() => {
-    if (readings.length === 0) return;
+    if (filteredReadings.length === 0) return;
     
     // Agrupar por dispositivo y actualizar el historial
     const updatedHistory = { ...readingsHistory };
     
-    readings.forEach(reading => {
+    filteredReadings.forEach(reading => {
       // Si hay un filtro de dispositivo, solo procesar ese dispositivo
-      if (deviceFilter && reading.deviceId.toLowerCase() !== deviceFilter) {
+      if (deviceFilter && reading.deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return;
       }
       
@@ -183,14 +212,14 @@ export default function SensorChart({
     
     const chart = chartInstance.current;
     
-    // Actualizar etiquetas con las últimas 9 marcas de tiempo
+    // Actualizar etiquetas con las últimas marcas de tiempo
     const timeLabels = [];
     const now = new Date();
     
     // Si hay un filtro de dispositivo, usar ese dispositivo para las etiquetas de tiempo
     // Si no, usar el primer dispositivo disponible en el historial
     const deviceToUse = deviceFilter ? 
-      Object.keys(readingsHistory).find(d => d.toLowerCase() === deviceFilter) :
+      Object.keys(readingsHistory).find(d => d.toLowerCase() === deviceFilter.toLowerCase()) :
       Object.keys(readingsHistory)[0];
     
     if (deviceToUse && readingsHistory[deviceToUse] && readingsHistory[deviceToUse].length > 0) {
@@ -222,18 +251,37 @@ export default function SensorChart({
     
     chart.data.labels = timeLabels;
     
-    // Limpiar datasets existentes si hay filtro de dispositivo
+    // Si hay un filtro, asegurarse de que solo se muestren los datasets de ese dispositivo
     if (deviceFilter) {
-      // Mantener solo los datasets del dispositivo filtrado
+      // Primero eliminar cualquier dataset que no sea del dispositivo filtrado
       chart.data.datasets = chart.data.datasets.filter(
-        ds => ds.label.toLowerCase() === deviceFilter
+        ds => ds.label.toLowerCase() === deviceFilter.toLowerCase()
       );
+      
+      // Si no hay datasets para este dispositivo, añadir uno
+      if (chart.data.datasets.length === 0) {
+        // Buscar el dispositivo en el historial
+        const deviceId = Object.keys(readingsHistory).find(
+          d => d.toLowerCase() === deviceFilter.toLowerCase()
+        );
+        
+        if (deviceId) {
+          chart.data.datasets.push({
+            label: deviceId,
+            data: Array(9).fill(null),
+            borderColor: colorScheme[0],
+            backgroundColor: `${colorScheme[0]}1A`,
+            tension: 0.3,
+            fill: chartType === 'line',
+          });
+        }
+      }
     }
     
     // Actualizar cada conjunto de datos con los datos del historial
     Object.entries(readingsHistory).forEach(([deviceId, deviceReadings]) => {
       // Si hay filtro de dispositivo y este no es el dispositivo, ignorar
-      if (deviceFilter && deviceId.toLowerCase() !== deviceFilter) {
+      if (deviceFilter && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return;
       }
       
@@ -281,7 +329,14 @@ export default function SensorChart({
   return (
     <Card className="overflow-hidden">
       <div className="px-5 py-4 border-b border-neutral-100 flex justify-between items-center">
-        <h3 className="font-medium">{title}</h3>
+        <h3 className="font-medium">
+          {title}
+          {deviceFilter && (
+            <span className="ml-2 text-sm text-gray-500">
+              ({deviceFilter})
+            </span>
+          )}
+        </h3>
         <div className="flex items-center space-x-2">
           <button className="p-1.5 rounded-md hover:bg-neutral-100">
             <span className="material-icons text-neutral-500 text-xl">fullscreen</span>
