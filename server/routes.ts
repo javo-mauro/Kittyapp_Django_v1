@@ -264,9 +264,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filtrar dispositivos según el usuario
       let filteredDevices = allDevices;
       
-      // Si el usuario es "jdayne" o tiene userId=2, solo mostrar el dispositivo KPCL0021
-      if (username === 'jdayne' || userId === 2) {
-        filteredDevices = allDevices.filter(device => device.deviceId === 'KPCL0021');
+      // Permitir que jdayne y admin vean todos los dispositivos
+      if (username === 'admin' || userId === 1) {
+        filteredDevices = allDevices; // El admin ve todos los dispositivos
+      }
+      // Para usuario "jdayne" asegurar que vea ambos dispositivos
+      else if (username === 'jdayne' || userId === 2) {
+        filteredDevices = allDevices;
       }
       // Para otros usuarios, filtrar según las mascotas que tengan asociadas
       else if (userId) {
