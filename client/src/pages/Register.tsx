@@ -144,7 +144,7 @@ export default function Register() {
         birthDate: data.birthDate.toISOString()
       };
 
-      console.log("Enviando datos del dueño:", formattedData);
+      console.log("Enviando datos del usuario:", formattedData);
 
       const result = await apiRequest<{ id: number }>("/api/pet-owners", {
         method: "POST",
@@ -156,7 +156,7 @@ export default function Register() {
 
       console.log("Respuesta del servidor:", result);
 
-      // Extraer el ID del dueño de la respuesta
+      // Extraer el ID del usuario de la respuesta
       let ownerIdValue: number | null = null;
       
       if (result && typeof result === 'object') {
@@ -180,14 +180,14 @@ export default function Register() {
       }
       
       if (ownerIdValue) {
-        console.log("ID del dueño establecido:", ownerIdValue);
+        console.log("ID del usuario establecido:", ownerIdValue);
         setOwnerId(ownerIdValue);
         // También actualizar el valor por defecto en el formulario de mascota
         petForm.setValue("ownerId", ownerIdValue);
         
         toast({
           title: "Registro exitoso",
-          description: "El dueño se ha registrado correctamente. Ahora puede registrar a su mascota.",
+          description: "El usuario se ha registrado correctamente. Ahora puede registrar a su mascota.",
         });
         // Cambiar a la pestaña de mascota
         setActiveTab("pet");
@@ -196,7 +196,7 @@ export default function Register() {
         throw new Error("No se recibió un ID válido del servidor");
       }
     } catch (error) {
-      let message = "Ocurrió un error al registrar el dueño";
+      let message = "Ocurrió un error al registrar el usuario";
       if (error instanceof Error) {
         message = error.message;
       }
@@ -212,7 +212,7 @@ export default function Register() {
   async function onSubmitPet(data: z.infer<typeof petFormSchema>) {
     try {
       if (!ownerId) {
-        throw new Error("No se ha seleccionado un dueño. Por favor registre primero al dueño.");
+        throw new Error("No se ha seleccionado un usuario. Por favor registre primero al usuario.");
       }
 
       console.log("Datos de mascota a enviar:", { ...data, ownerId });
@@ -256,7 +256,7 @@ export default function Register() {
         hasDiseases: false,
         diseaseNotes: "",
         kittyPawDeviceId: "",
-        ownerId: currentOwnerId // Mantener el mismo dueño para poder registrar múltiples mascotas
+        ownerId: currentOwnerId // Mantener el mismo usuario para poder registrar múltiples mascotas
       });
     } catch (error) {
       let message = "Ocurrió un error al registrar la mascota";
@@ -805,7 +805,7 @@ export default function Register() {
                 onClick={() => setShowOwnersDialog(true)}
               >
                 <UsersIcon className="h-4 w-4 mr-2" />
-                Ver Propietarios
+                Ver Usuarios
               </Button>
               <Button 
                 className="flex-1" 
@@ -826,7 +826,7 @@ export default function Register() {
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
               <CardTitle className="text-xl font-bold text-[#F87A6D]">
-                Propietarios Registrados
+                Usuarios Registrados
               </CardTitle>
               <Button 
                 variant="ghost" 
