@@ -375,6 +375,13 @@ export default function SensorChart({
     // Convertir los timestamps a etiquetas legibles
     const timeLabels = limitedTimestamps.map(date => format(date, 'HH:mm'));
     
+    // Log para depuración
+    console.log('Timestamps para el gráfico:', 
+      limitedTimestamps.map(date => 
+        `${format(date, 'HH:mm:ss')} (${date.toISOString()})`
+      ).join(', ')
+    );
+    
     chart.data.labels = timeLabels;
     
     // Si hay un filtro específico de dispositivo, mostrar solo ese dispositivo
@@ -487,16 +494,23 @@ export default function SensorChart({
       
       if (datasetIndex !== -1 && chart.data.labels) {
         // Inicializar array de datos con nulos para todos los timestamps
-        const data = Array(chart.data.labels.length).fill(null);
+        const labelsLength = chart.data.labels.length;
+        const data = Array(labelsLength).fill(null);
         
         // Para cada lectura, encontrar su posición correspondiente en el array de etiquetas
         deviceReadings.forEach((reading: any) => {
           if (reading.timestamp && reading.value !== undefined && chart.data.labels) {
             // Formato de timestamp desde los datos: "10/04/2025, 00:29:05"
-            const readingTime = format(new Date(reading.timestamp), 'HH:mm');
+            const readingDate = new Date(reading.timestamp);
+            const readingTime = format(readingDate, 'HH:mm');
             
             // Buscar índice de esta hora en las etiquetas
             const timeIndex = chart.data.labels.indexOf(readingTime);
+            
+            // Log para depurar
+            if (deviceReadings.indexOf(reading) % 5 === 0) { // Log cada 5 lecturas para no saturar la consola
+              console.log(`Asignando valor ${reading.value} a timestamp ${readingTime} (${reading.timestamp}), índice: ${timeIndex}`);
+            }
             
             if (timeIndex !== -1) {
               // Coloca el valor en la posición correspondiente
