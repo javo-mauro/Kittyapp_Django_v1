@@ -98,13 +98,8 @@ export default function SensorChart({
       
       return {
         label: deviceId,
-        data: Array.from({ length: 9 }, (_, i) => {
-          // Proporcionar valores iniciales razonables basados en el tipo de sensor
-          return sensorType === 'temperature' ? 22 + Math.random() * 2 : 
-                sensorType === 'humidity' ? 50 + Math.random() * 5 : 
-                sensorType === 'light' ? 500 + Math.random() * 100 :
-                sensorType === 'weight' ? 200 + Math.random() * 50 : 0;
-        }),
+        // Inicializar con un array de valores nulos - se actualizarán con datos reales
+        data: Array(9).fill(null),
         borderColor: colorScheme[index % colorScheme.length],
         backgroundColor: `${colorScheme[index % colorScheme.length]}1A`, // Add 10% opacity
         tension: 0.3,

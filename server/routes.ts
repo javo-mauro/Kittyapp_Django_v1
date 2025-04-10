@@ -618,13 +618,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize the MQTT client
   await mqttClient.loadAndConnect();
 
-  // If we don't have real data, generate some random data every 10 seconds
+  // Comentamos la generación de datos aleatorios para usar solo datos reales del broker MQTT
+  // Si algún momento se necesita generar datos de prueba, descomentar este bloque
+  /*
   if (dataGenerationInterval) {
     clearInterval(dataGenerationInterval);
   }
   dataGenerationInterval = setInterval(() => {
     mqttClient.generateRandomData();
   }, 10000);
+  */
 
   return httpServer;
 }
