@@ -31,7 +31,7 @@ export default function SensorChart({
   sensorType, 
   chartType = 'line', 
   height = 'h-64',
-  colorScheme = ['#E84A5F', '#2A363B', '#99B898', '#FF847C', '#FECEAB', '#6C5B7B'],
+  colorScheme = ['#FF847C', '#99B898', '#FECEAB', '#2A363B', '#E84A5F', '#A8E6CE'],
   deviceFilter
 }: SensorChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
@@ -104,18 +104,18 @@ export default function SensorChart({
       return format(d, 'HH:mm:ss');
     });
     
-    // Asignar colores fijos a cada dispositivo basados en su ID para mantener consistencia
+    // Función para asignar colores fijos a dispositivos (global al componente)
     const getDeviceColorIndex = (deviceId: string): number => {
-      // Asignación fija de colores por dispositivo
+      // Mapeo fijo de dispositivos a índices de colores
       const colorMapping: Record<string, number> = {
-        'kpcl0021': 0, // Collar de Malto: rojo
-        'kpcl0022': 1, // Placa de Canela: azul oscuro
+        'kpcl0021': 0, // Collar de Malto: rojo suave
+        'kpcl0022': 1, // Placa de Canela: verde suave
       };
       
       const normalizedDeviceId = deviceId.toLowerCase();
       return colorMapping[normalizedDeviceId] !== undefined 
         ? colorMapping[normalizedDeviceId] 
-        : Object.keys(deviceReadings).indexOf(deviceId) % colorScheme.length;
+        : Math.abs(normalizedDeviceId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % colorScheme.length;
     };
     
     // Generate datasets (solo para los dispositivos filtrados)
@@ -182,6 +182,27 @@ export default function SensorChart({
               display: true,
               text: 'Tiempo',
             }
+          }
+        },
+        // Configuración de animaciones más suaves
+        animation: {
+          duration: 800, // Duración más larga para transiciones más suaves
+          easing: 'easeOutQuad', // Curva de easing más suave
+        },
+        transitions: {
+          active: {
+            animation: {
+              duration: 800
+            }
+          }
+        },
+        elements: {
+          line: {
+            tension: 0.4 // Más curva para líneas más suaves
+          },
+          point: {
+            radius: 3,
+            hoverRadius: 5
           }
         }
       }
@@ -307,18 +328,18 @@ export default function SensorChart({
     } 
     // Si el filtro es "all", asegurarse de que estén todos los dispositivos representados
     else if (deviceFilter === 'all') {
-      // Asignar colores fijos a cada dispositivo basados en su ID para mantener consistencia
+      // Función para asignar colores fijos a dispositivos
       const getDeviceColorIndex = (deviceId: string): number => {
-        // Asignación fija de colores por dispositivo
+        // Mapeo fijo de dispositivos a índices de colores
         const colorMapping: Record<string, number> = {
-          'kpcl0021': 0, // Collar de Malto: rojo
-          'kpcl0022': 1, // Placa de Canela: azul oscuro
+          'kpcl0021': 0, // Collar de Malto: rojo suave
+          'kpcl0022': 1, // Placa de Canela: verde suave
         };
         
         const normalizedDeviceId = deviceId.toLowerCase();
         return colorMapping[normalizedDeviceId] !== undefined 
           ? colorMapping[normalizedDeviceId] 
-          : Object.keys(readingsHistory).indexOf(deviceId) % colorScheme.length;
+          : Math.abs(normalizedDeviceId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % colorScheme.length;
       };
       
       // Eliminar datasets que puedan estar duplicados
@@ -353,18 +374,18 @@ export default function SensorChart({
       
       // Si no existe el dataset para este dispositivo, lo creamos
       if (datasetIndex === -1 && deviceReadings.length > 0) {
-        // Asignar colores fijos a cada dispositivo basados en su ID para mantener consistencia
+        // Función para asignar colores fijos a dispositivos
         const getDeviceColorIndex = (deviceId: string): number => {
-          // Asignación fija de colores por dispositivo
+          // Mapeo fijo de dispositivos a índices de colores
           const colorMapping: Record<string, number> = {
-            'kpcl0021': 0, // Collar de Malto: rojo
-            'kpcl0022': 1, // Placa de Canela: azul oscuro
+            'kpcl0021': 0, // Collar de Malto: rojo suave
+            'kpcl0022': 1, // Placa de Canela: verde suave
           };
           
           const normalizedDeviceId = deviceId.toLowerCase();
           return colorMapping[normalizedDeviceId] !== undefined 
             ? colorMapping[normalizedDeviceId] 
-            : chart.data.datasets.length % colorScheme.length;
+            : Math.abs(normalizedDeviceId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % colorScheme.length;
         };
         
         const colorIdx = getDeviceColorIndex(deviceId);
@@ -401,7 +422,11 @@ export default function SensorChart({
       }
     });
     
-    chart.update();
+    // Configuración para animaciones más suaves durante actualización
+    chart.update({
+      duration: 800, // Más tiempo para animaciones más suaves
+      easing: 'easeOutQuad', // Curva de aceleración más suave
+    });
   }, [readingsHistory, chartType, colorScheme, deviceFilter]);
   
   return (
