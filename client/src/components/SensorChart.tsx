@@ -89,8 +89,6 @@ export default function SensorChart({
     
     // La recreación se hará en el siguiente efecto
   }, [deviceFilter]);
-  
-  // Usamos la función getDeviceDisplayName definida fuera del componente
 
   // Crear o actualizar el gráfico
   useEffect(() => {
@@ -287,86 +285,34 @@ export default function SensorChart({
     
     const chart = chartInstance.current;
     
-    // Crear un mapa para timestamps únicos por minuto
-    const uniqueMinuteTimestamps = new Map<string, Date>();
-    
-    // Extraer timestamps de los datos y mantener el más reciente por minuto
-    Object.values(readingsHistory).forEach(deviceReadings => {
-      deviceReadings.forEach((reading: any) => {
-        if (reading.timestamp) {
-          try {
-            // Convertir el timestamp string a objeto Date
-            const date = new Date(reading.timestamp);
-            if (!isNaN(date.getTime())) {
-              // Usar el formato HH:mm como clave para combinar lecturas del mismo minuto
-              const minuteKey = format(date, 'HH:mm');
-              // Guardar el timestamp más reciente si hay múltiples en el mismo minuto
-              if (!uniqueMinuteTimestamps.has(minuteKey) || 
-                  date > uniqueMinuteTimestamps.get(minuteKey)!) {
-                uniqueMinuteTimestamps.set(minuteKey, date);
-              }
-            }
-          } catch (error) {
-            console.error("Error processing timestamp:", reading.timestamp, error);
-          }
-        }
-      });
-    });
-    
-    // Convertir el mapa a un array de fechas
-    let allTimestamps = Array.from(uniqueMinuteTimestamps.values());
-    
-    // Ordenar timestamps cronológicamente
-    allTimestamps.sort((a, b) => a.getTime() - b.getTime());
-    
-    // SIEMPRE generar un rango completo de tiempo para asegurar 60 puntos
+    // Generar el conjunto completo de 60 puntos (1 hora) de tiempo
     const now = new Date();
-    allTimestamps = []; // Limpiar array para evitar duplicados
+    const timestamps: Date[] = [];
     
-    // Generar timestamps para la última hora (60 minutos)
+    // Generar timestamps para la última hora (60 puntos)
     for (let i = 0; i < 60; i++) {
       const timestamp = new Date(now);
-      timestamp.setMinutes(timestamp.getMinutes() - 60 + i);
-      // Establecer segundos y milisegundos a 0 para tener minutos exactos
+      timestamp.setMinutes(timestamp.getMinutes() - 59 + i); // De -59 a 0 minutos (hora actual)
       timestamp.setSeconds(0);
       timestamp.setMilliseconds(0);
-      allTimestamps.push(timestamp);
+      timestamps.push(timestamp);
     }
     
-    // Ya hemos generado un conjunto completo de 60 marcas de tiempo
-    // No necesitamos agregar más timestamps o ajustar el rango
-    
-    // Eliminar duplicados después de ordenar (por si acaso)
-    const uniqueTimestamps: Date[] = [];
-    const seenMinutes = new Set<string>();
-    
-    allTimestamps.forEach(date => {
-      const minuteKey = format(date, 'HH:mm');
-      if (!seenMinutes.has(minuteKey)) {
-        seenMinutes.add(minuteKey);
-        uniqueTimestamps.push(date);
-      }
-    });
-    
-    // Limitar a 60 timestamps para mostrar máximo 1 hora
-    const limitedTimestamps = uniqueTimestamps.slice(-60);
-    
     // Convertir los timestamps a etiquetas legibles
-    const timeLabels = limitedTimestamps.map(date => format(date, 'HH:mm'));
+    const timeLabels = timestamps.map(date => format(date, 'HH:mm'));
     
     // Log para depuración
-    console.log('Timestamps para el gráfico:', 
-      limitedTimestamps.map(date => 
-        `${format(date, 'HH:mm:ss')} (${date.toISOString()})`
-      ).join(', ')
+    console.log('Timestamps para el gráfico (60 puntos generados):', 
+      timestamps.length, 
+      timeLabels.slice(0, 5).join(', ') + ' ... ' + timeLabels.slice(-5).join(', ')
     );
     
+    // Asignar las etiquetas de tiempo al gráfico
     chart.data.labels = timeLabels;
     
     // Si hay un filtro específico de dispositivo, mostrar solo ese dispositivo
     if (deviceFilter && deviceFilter !== 'all') {
       // Primero eliminar cualquier dataset que no sea del dispositivo filtrado
-      // Usamos el nombre mostrado (getDeviceDisplayName) para la comparación
       chart.data.datasets = chart.data.datasets.filter(ds => 
         ds.label && ds.label === getDeviceDisplayName(deviceFilter)
       );
@@ -410,7 +356,6 @@ export default function SensorChart({
       const existingLabels = new Set(chart.data.datasets.map(ds => ds.label));
       
       // Añadir datasets para dispositivos que no tengan uno, en orden consistente
-      // Ordenar los dispositivos para mantener el orden de las leyendas consistente
       const orderedDevices = getOrderedDeviceList(Object.keys(readingsHistory));
       orderedDevices.forEach((deviceId) => {
         if (!existingLabels.has(getDeviceDisplayName(deviceId)) && readingsHistory[deviceId].length > 0) {
