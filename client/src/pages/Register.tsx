@@ -848,7 +848,7 @@ export default function Register() {
               </div>
             ) : !Array.isArray(petOwners) || petOwners.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                No hay propietarios registrados
+                No hay usuarios registrados
               </div>
             ) : (
               <div className="space-y-4">
@@ -959,7 +959,7 @@ export default function Register() {
               </div>
             ) : !Array.isArray(petOwners) || petOwners.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                No hay propietarios registrados
+                No hay usuarios registrados
               </div>
             ) : (
               <div className="space-y-4">
@@ -1091,7 +1091,7 @@ export default function Register() {
                   </div>
                   
                   <div className="mt-6">
-                    <h3 className="font-semibold text-sm mb-2">Mascotas del propietario</h3>
+                    <h3 className="font-semibold text-sm mb-2">Mascotas del usuario</h3>
                     <div className="space-y-2">
                       {pets.filter(pet => pet.ownerId === owner.id).length > 0 ? (
                         pets.filter(pet => pet.ownerId === owner.id).map(pet => (
@@ -1103,7 +1103,7 @@ export default function Register() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-muted-foreground">Este propietario no tiene mascotas registradas</p>
+                        <p className="text-sm text-muted-foreground">Este usuario no tiene mascotas registradas</p>
                       )}
                     </div>
                   </div>
@@ -1197,7 +1197,7 @@ export default function Register() {
                   </div>
 
                   <div className="mt-6">
-                    <h3 className="font-semibold text-sm mb-2">Propietario</h3>
+                    <h3 className="font-semibold text-sm mb-2">Usuario</h3>
                     <div className="space-y-2">
                       {petOwners.filter(owner => owner.id === pet.ownerId).map(owner => (
                         <div key={owner.id} className="border rounded-lg p-3 bg-gray-50">
