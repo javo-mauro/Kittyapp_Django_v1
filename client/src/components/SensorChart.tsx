@@ -280,17 +280,100 @@ export default function SensorChart({
     
     const chart = chartInstance.current;
     
-    // Generar etiquetas de tiempo para un período de 1 hora (60 puntos, cada 1 minuto)
-    const timeLabels = [];
-    const now = new Date();
+    // Crear un mapa para timestamps únicos por minuto
+    const uniqueMinuteTimestamps = new Map<string, Date>();
     
-    // Generar etiquetas de tiempo de la última hora en intervalos de 1 minuto
-    for (let i = 0; i < 60; i++) {
-      const timestamp = new Date(now);
-      // Retroceder 1 hora (60 minutos) y avanzar de 1 en 1 minuto
-      timestamp.setMinutes(timestamp.getMinutes() - 60 + i);
-      timeLabels.push(format(timestamp, 'HH:mm'));
+    // Extraer timestamps de los datos y mantener el más reciente por minuto
+    Object.values(readingsHistory).forEach(deviceReadings => {
+      deviceReadings.forEach((reading: any) => {
+        if (reading.timestamp) {
+          try {
+            // Convertir el timestamp string a objeto Date
+            const date = new Date(reading.timestamp);
+            if (!isNaN(date.getTime())) {
+              // Usar el formato HH:mm como clave para combinar lecturas del mismo minuto
+              const minuteKey = format(date, 'HH:mm');
+              // Guardar el timestamp más reciente si hay múltiples en el mismo minuto
+              if (!uniqueMinuteTimestamps.has(minuteKey) || 
+                  date > uniqueMinuteTimestamps.get(minuteKey)!) {
+                uniqueMinuteTimestamps.set(minuteKey, date);
+              }
+            }
+          } catch (error) {
+            console.error("Error processing timestamp:", reading.timestamp, error);
+          }
+        }
+      });
+    });
+    
+    // Convertir el mapa a un array de fechas
+    let allTimestamps = Array.from(uniqueMinuteTimestamps.values());
+    
+    // Ordenar timestamps cronológicamente
+    allTimestamps.sort((a, b) => a.getTime() - b.getTime());
+    
+    // Si no hay suficientes timestamps (menos de 2), generar un rango de tiempo completo
+    if (allTimestamps.length < 2) {
+      const now = new Date();
+      allTimestamps = []; // Limpiar array para evitar duplicados
+      
+      // Generar timestamps para la última hora (60 minutos)
+      for (let i = 0; i < 60; i++) {
+        const timestamp = new Date(now);
+        timestamp.setMinutes(timestamp.getMinutes() - 60 + i);
+        // Establecer segundos y milisegundos a 0 para tener minutos exactos
+        timestamp.setSeconds(0);
+        timestamp.setMilliseconds(0);
+        allTimestamps.push(timestamp);
+      }
+    } 
+    // Si hay timestamps pero no cubren toda la hora, asegurar que tengamos un rango completo
+    else if (allTimestamps.length < 60) {
+      // Obtener el primer y último timestamp
+      const firstTime = allTimestamps[0];
+      const lastTime = allTimestamps[allTimestamps.length - 1];
+      
+      // Calcular la diferencia de tiempo en minutos
+      const diffMinutes = Math.floor((lastTime.getTime() - firstTime.getTime()) / (1000 * 60));
+      
+      // Si la diferencia es menor a 60 minutos, completar con timestamps adicionales
+      if (diffMinutes < 59) {
+        // Añadir timestamps anteriores si es necesario
+        for (let i = 1; i <= 30; i++) {
+          const timestamp = new Date(firstTime);
+          timestamp.setMinutes(timestamp.getMinutes() - i);
+          allTimestamps.unshift(timestamp);
+        }
+        
+        // Añadir timestamps posteriores si es necesario
+        for (let i = 1; i <= 30; i++) {
+          const timestamp = new Date(lastTime);
+          timestamp.setMinutes(timestamp.getMinutes() + i);
+          allTimestamps.push(timestamp);
+        }
+        
+        // Reordenar después de añadir
+        allTimestamps.sort((a, b) => a.getTime() - b.getTime());
+      }
     }
+    
+    // Eliminar duplicados después de ordenar (por si acaso)
+    const uniqueTimestamps: Date[] = [];
+    const seenMinutes = new Set<string>();
+    
+    allTimestamps.forEach(date => {
+      const minuteKey = format(date, 'HH:mm');
+      if (!seenMinutes.has(minuteKey)) {
+        seenMinutes.add(minuteKey);
+        uniqueTimestamps.push(date);
+      }
+    });
+    
+    // Limitar a 60 timestamps para mostrar máximo 1 hora
+    const limitedTimestamps = uniqueTimestamps.slice(-60);
+    
+    // Convertir los timestamps a etiquetas legibles
+    const timeLabels = limitedTimestamps.map(date => format(date, 'HH:mm'));
     
     chart.data.labels = timeLabels;
     
@@ -402,23 +485,28 @@ export default function SensorChart({
         datasetIndex = chart.data.datasets.length - 1;
       }
       
-      if (datasetIndex !== -1) {
-        // Preparar los datos para el gráfico (últimos 60 valores para 1 hora)
-        const numDataPoints = Math.min(60, deviceReadings.length);
-        const values = [];
+      if (datasetIndex !== -1 && chart.data.labels) {
+        // Inicializar array de datos con nulos para todos los timestamps
+        const data = Array(chart.data.labels.length).fill(null);
         
-        for (let i = deviceReadings.length - numDataPoints; i < deviceReadings.length; i++) {
-          if (deviceReadings[i]) {
-            values.push(deviceReadings[i].value);
+        // Para cada lectura, encontrar su posición correspondiente en el array de etiquetas
+        deviceReadings.forEach((reading: any) => {
+          if (reading.timestamp && reading.value !== undefined && chart.data.labels) {
+            // Formato de timestamp desde los datos: "10/04/2025, 00:29:05"
+            const readingTime = format(new Date(reading.timestamp), 'HH:mm');
+            
+            // Buscar índice de esta hora en las etiquetas
+            const timeIndex = chart.data.labels.indexOf(readingTime);
+            
+            if (timeIndex !== -1) {
+              // Coloca el valor en la posición correspondiente
+              data[timeIndex] = reading.value;
+            }
           }
-        }
+        });
         
-        // Rellenar con nulos si no tenemos suficientes valores
-        while (values.length < 60) {
-          values.unshift(null);
-        }
-        
-        chart.data.datasets[datasetIndex].data = values;
+        // Asignar los datos al dataset
+        chart.data.datasets[datasetIndex].data = data;
       }
     });
     
