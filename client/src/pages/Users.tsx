@@ -19,28 +19,7 @@ interface User {
   lastLogin: string | null;
 }
 
-interface PetOwner {
-  id: number;
-  name: string;
-  paternalLastName: string;
-  maternalLastName: string | null;
-  email: string;
-  address: string;
-  birthDate: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Pet {
-  id: number;
-  name: string;
-  chipNumber: string;
-  breed: string;
-  species: string;
-  ownerId: number;
-  kittyPawDeviceId: string | null;
-  // Otros campos del pet
-}
+// Eliminamos las interfaces que ya no usamos
 
 interface Device {
   id: number;
@@ -64,20 +43,16 @@ interface SensorData {
 export default function Users() {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
-  const [petOwners, setPetOwners] = useState<PetOwner[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [filteredPetOwners, setFilteredPetOwners] = useState<PetOwner[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [selectedOwner, setSelectedOwner] = useState<PetOwner | null>(null);
-  const [pets, setPets] = useState<Pet[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [sensorData, setSensorData] = useState<SensorData[]>([]);
-  const [selectedItem, setSelectedItem] = useState<"user" | "pet" | "device" | null>(null);
+  const [selectedItem, setSelectedItem] = useState<"user" | "device" | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  // Cargar usuarios y propietarios de mascotas
+  // Cargar usuarios
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -86,11 +61,6 @@ export default function Users() {
         const fetchedUsers = await apiRequest<User[]>("/api/users");
         setUsers(fetchedUsers);
         setFilteredUsers(fetchedUsers);
-
-        // Obtenemos la lista de propietarios de mascotas
-        const fetchedPetOwners = await apiRequest<PetOwner[]>("/api/pet-owners");
-        setPetOwners(fetchedPetOwners);
-        setFilteredPetOwners(fetchedPetOwners);
       } catch (error) {
         console.error("Error al obtener usuarios:", error);
         toast({
@@ -106,7 +76,7 @@ export default function Users() {
     fetchUsers();
   }, [toast]);
 
-  // Filtrar usuarios y propietarios basados en el término de búsqueda
+  // Filtrar usuarios basados en el término de búsqueda
   useEffect(() => {
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
@@ -118,46 +88,12 @@ export default function Users() {
           (user.name && user.name.toLowerCase().includes(lowerSearchTerm))
       );
       setFilteredUsers(filtered);
-
-      // Filtrar propietarios de mascotas
-      const filteredOwners = petOwners.filter(
-        (owner) =>
-          owner.name.toLowerCase().includes(lowerSearchTerm) ||
-          owner.paternalLastName.toLowerCase().includes(lowerSearchTerm) ||
-          (owner.maternalLastName && owner.maternalLastName.toLowerCase().includes(lowerSearchTerm)) ||
-          owner.email.toLowerCase().includes(lowerSearchTerm)
-      );
-      setFilteredPetOwners(filteredOwners);
     } else {
       setFilteredUsers(users);
-      setFilteredPetOwners(petOwners);
     }
-  }, [searchTerm, users, petOwners]);
+  }, [searchTerm, users]);
 
-  // Función para obtener las mascotas de un propietario
-  const fetchPetsByOwnerId = async (ownerId: number) => {
-    try {
-      setDetailsLoading(true);
-      const fetchedPets = await apiRequest<Pet[]>(`/api/pet-owners/${ownerId}/pets`);
-      setPets(fetchedPets);
-      
-      // Limpiar dispositivos y datos de sensores cuando se cambia de propietario
-      setDevices([]);
-      setSensorData([]);
-      
-      return fetchedPets;
-    } catch (error) {
-      console.error(`Error al obtener mascotas del propietario ${ownerId}:`, error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudieron cargar las mascotas del propietario.",
-      });
-      return [];
-    } finally {
-      setDetailsLoading(false);
-    }
-  };
+  // Eliminamos la función de obtener mascotas por propietario, ya no la usamos
 
   // Función para obtener los dispositivos asociados a un usuario
   const fetchUserDevices = async (username: string) => {
@@ -414,102 +350,49 @@ export default function Users() {
             />
           </div>
 
-          <Tabs defaultValue="system">
-            <TabsList className="w-full">
-              <TabsTrigger value="system" className="flex-1">Usuarios del Sistema</TabsTrigger>
-              <TabsTrigger value="owners" className="flex-1">Propietarios</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="system">
-              <Card>
-                <CardHeader className="py-3">
-                  <CardTitle className="text-lg">Usuarios</CardTitle>
-                  <CardDescription>Usuarios registrados en el sistema</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {loading ? (
-                    <div className="flex justify-center items-center p-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[500px]">
-                      <div className="space-y-1 p-2">
-                        {filteredUsers.length > 0 ? (
-                          filteredUsers.map((user) => (
-                            <div
-                              key={user.id}
-                              className={`p-3 rounded-md flex items-center space-x-3 cursor-pointer hover:bg-gray-100 ${
-                                selectedUser?.id === user.id ? "bg-gray-100" : ""
-                              }`}
-                              onClick={() => handleUserSelect(user)}
-                              onDoubleClick={() => handleSwitchUser(user.username)}
-                            >
-                              <div className="bg-primary/10 h-10 w-10 rounded-full flex items-center justify-center">
-                                <User className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{user.name || user.username}</p>
-                                <p className="text-xs text-gray-500 truncate">@{user.username}</p>
-                              </div>
-                              <Badge variant="outline" className="text-xs">
-                                {user.role || "user"}
-                              </Badge>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-center text-gray-500 py-4">No se encontraron usuarios.</p>
-                        )}
-                      </div>
-                    </ScrollArea>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="owners">
-              <Card>
-                <CardHeader className="py-3">
-                  <CardTitle className="text-lg">Propietarios</CardTitle>
-                  <CardDescription>Propietarios de mascotas registrados</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {loading ? (
-                    <div className="flex justify-center items-center p-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[500px]">
-                      <div className="space-y-1 p-2">
-                        {filteredPetOwners.length > 0 ? (
-                          filteredPetOwners.map((owner) => (
-                            <div
-                              key={owner.id}
-                              className={`p-3 rounded-md flex items-center space-x-3 cursor-pointer hover:bg-gray-100 ${
-                                selectedOwner?.id === owner.id ? "bg-gray-100" : ""
-                              }`}
-                              onClick={() => handleOwnerSelect(owner)}
-                            >
-                              <div className="bg-orange-100 h-10 w-10 rounded-full flex items-center justify-center">
-                                <User className="h-5 w-5 text-orange-500" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">
-                                  {owner.name} {owner.paternalLastName} {owner.maternalLastName || ""}
-                                </p>
-                                <p className="text-xs text-gray-500 truncate">{owner.email}</p>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-center text-gray-500 py-4">No se encontraron propietarios.</p>
-                        )}
-                      </div>
-                    </ScrollArea>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-lg">Usuarios</CardTitle>
+              <CardDescription>Usuarios registrados en el sistema</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="flex justify-center items-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+                </div>
+              ) : (
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-1 p-2">
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => (
+                        <div
+                          key={user.id}
+                          className={`p-3 rounded-md flex items-center space-x-3 cursor-pointer hover:bg-gray-100 ${
+                            selectedUser?.id === user.id ? "bg-gray-100" : ""
+                          }`}
+                          onClick={() => handleUserSelect(user)}
+                          onDoubleClick={() => handleSwitchUser(user.username)}
+                        >
+                          <div className="bg-primary/10 h-10 w-10 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{user.name || user.username}</p>
+                            <p className="text-xs text-gray-500 truncate">@{user.username}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {user.role || "user"}
+                          </Badge>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-gray-500 py-4">No se encontraron usuarios.</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Panel derecho: Detalles del usuario/propietario seleccionado */}
@@ -520,23 +403,19 @@ export default function Users() {
               <CardDescription>
                 {selectedUser 
                   ? "Información del usuario y dispositivos asociados" 
-                  : selectedOwner 
-                    ? "Información del propietario y mascotas" 
-                    : "Selecciona un usuario o propietario para ver sus detalles"}
+                  : "Selecciona un usuario para ver sus detalles"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {selectedUser 
                 ? renderUserDetails() 
-                : selectedOwner 
-                  ? renderOwnerDetails() 
-                  : (
-                    <div className="h-72 flex flex-col items-center justify-center text-center p-8 text-gray-500">
-                      <User className="h-16 w-16 mb-4 opacity-20" />
-                      <p>Selecciona un usuario o propietario de la lista para ver sus detalles.</p>
-                      <p className="text-sm mt-2">Puedes hacer doble clic en un usuario para cambiar a su cuenta.</p>
-                    </div>
-                  )}
+                : (
+                  <div className="h-72 flex flex-col items-center justify-center text-center p-8 text-gray-500">
+                    <User className="h-16 w-16 mb-4 opacity-20" />
+                    <p>Selecciona un usuario de la lista para ver sus detalles.</p>
+                    <p className="text-sm mt-2">Puedes hacer doble clic en un usuario para cambiar a su cuenta.</p>
+                  </div>
+                )}
             </CardContent>
           </Card>
         </div>
