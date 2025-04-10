@@ -87,7 +87,7 @@ export default function Register() {
   const [selectedOwnerId, setSelectedOwnerId] = useState<number | null>(null);
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   
-  // Consultas para obtener propietarios y mascotas
+  // Consultas para obtener usuarios y mascotas
   const { data: petOwners = [], isLoading: isLoadingOwners, refetch: refetchOwners } = useQuery<PetOwner[]>({
     queryKey: ['/api/pet-owners'],
     enabled: true
@@ -838,7 +838,7 @@ export default function Register() {
               </Button>
             </div>
             <CardDescription>
-              Listado de propietarios en el sistema
+              Listado de usuarios en el sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -947,9 +947,9 @@ export default function Register() {
       <Dialog open={showOwnersDialog} onOpenChange={setShowOwnersDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#F87A6D]">Propietarios Registrados</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-[#F87A6D]">Usuarios Registrados</DialogTitle>
             <DialogDescription>
-              Listado completo de propietarios en el sistema
+              Listado completo de usuarios en el sistema
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -1065,7 +1065,7 @@ export default function Register() {
       <Dialog open={showOwnerDetailsDialog} onOpenChange={setShowOwnerDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#F87A6D]">Detalle del Propietario</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-[#F87A6D]">Detalle del Usuario</DialogTitle>
           </DialogHeader>
           {selectedOwnerId && (
             <>
