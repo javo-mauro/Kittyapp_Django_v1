@@ -60,7 +60,9 @@ export default function Dashboard() {
                 <SelectItem value="all">Todos los Dispositivos</SelectItem>
                 {devices.map(device => (
                   <SelectItem key={device.deviceId} value={device.deviceId.toLowerCase()}>
-                    {device.name}
+                    {device.deviceId === 'KPCL0021' ? 'Collar Malto' : 
+                     device.deviceId === 'KPCL0022' ? 'Collar Luna' : 
+                     device.name}
                   </SelectItem>
                 ))}
               </SelectContent>

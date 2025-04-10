@@ -71,13 +71,7 @@ export default function SensorChart({
     // La recreación se hará en el siguiente efecto
   }, [deviceFilter]);
   
-  // Función para obtener un nombre amigable para el dispositivo
-  const getDeviceDisplayName = (deviceId: string) => {
-    // Implementar lógica para mostrar nombres amigables
-    if (deviceId === 'KPCL0021') return 'Kitty Paw Device';
-    if (deviceId === 'KPCL0022') return 'Kitty Paw de Amanda';
-    return deviceId; // Fallback al ID si no hay nombre configurado
-  };
+  // Usamos la función getDeviceDisplayName definida fuera del componente
 
   // Crear o actualizar el gráfico
   useEffect(() => {
@@ -116,7 +110,7 @@ export default function SensorChart({
       }
       
       return {
-        label: deviceId,
+        label: getDeviceDisplayName(deviceId),
         // Inicializar con un array de valores nulos - se actualizarán con datos reales
         data: Array(9).fill(null),
         borderColor: colorScheme[index % colorScheme.length],
@@ -139,7 +133,7 @@ export default function SensorChart({
         plugins: {
           legend: {
             position: 'top',
-            display: !deviceFilter, // Ocultar leyenda si hay un dispositivo filtrado
+            display: !deviceFilter || deviceFilter === 'all', // Mostrar leyenda para "all" o sin filtro
           },
           tooltip: {
             mode: 'index',
@@ -268,8 +262,9 @@ export default function SensorChart({
     // Si hay un filtro específico de dispositivo, mostrar solo ese dispositivo
     if (deviceFilter && deviceFilter !== 'all') {
       // Primero eliminar cualquier dataset que no sea del dispositivo filtrado
+      // Usamos el nombre mostrado (getDeviceDisplayName) para la comparación
       chart.data.datasets = chart.data.datasets.filter(ds => 
-        ds.label && ds.label.toLowerCase() === deviceFilter.toLowerCase()
+        ds.label && ds.label === getDeviceDisplayName(deviceFilter)
       );
       
       // Si no hay datasets para este dispositivo, añadir uno
@@ -298,7 +293,7 @@ export default function SensorChart({
       
       // Añadir datasets para dispositivos que no tengan uno
       Object.keys(readingsHistory).forEach((deviceId, index) => {
-        if (!existingLabels.has(deviceId) && readingsHistory[deviceId].length > 0) {
+        if (!existingLabels.has(getDeviceDisplayName(deviceId)) && readingsHistory[deviceId].length > 0) {
           const colorIndex = chart.data.datasets.length % colorScheme.length;
           chart.data.datasets.push({
             label: getDeviceDisplayName(deviceId),
@@ -367,7 +362,7 @@ export default function SensorChart({
           {title}
           {deviceFilter && deviceFilter !== 'all' && (
             <span className="ml-2 text-sm text-gray-500">
-              ({deviceFilter})
+              ({getDeviceDisplayName(deviceFilter)})
             </span>
           )}
           {deviceFilter === 'all' && (
