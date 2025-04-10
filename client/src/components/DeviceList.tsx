@@ -7,6 +7,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Función para mostrar nombres más amigables para los dispositivos
+const getDeviceDisplayName = (deviceId: string): string => {
+  const deviceMap: Record<string, string> = {
+    'KPCL0021': 'Collar Malto',
+    'KPCL0022': 'Collar Luna',
+  };
+  
+  return deviceMap[deviceId] || deviceId;
+};
+
 export default function DeviceList() {
   const { devices, fetchUserDevices } = useWebSocket();
   const { user } = useAuth();
@@ -88,7 +98,8 @@ export default function DeviceList() {
                         <span className={`material-icons text-primary text-sm ${device.status === 'offline' ? 'text-neutral-500' : ''}`}>memory</span>
                       </div>
                       <div>
-                        <div className="font-medium text-neutral-700">{device.deviceId}</div>
+                        <div className="font-medium text-neutral-700">{getDeviceDisplayName(device.deviceId)}</div>
+                        <div className="text-xs text-neutral-500">{device.deviceId}</div>
                         <div className="text-xs text-neutral-500 font-mono">{device.ipAddress}</div>
                       </div>
                     </div>
@@ -132,7 +143,7 @@ export default function DeviceList() {
   );
 }
 
-function StatusBadge({ status }: { status: string | undefined }) {
+function StatusBadge({ status }: { status: string | undefined | null }) {
   let bgColor = '';
   let textColor = '';
   let dotColor = '';

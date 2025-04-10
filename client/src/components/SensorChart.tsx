@@ -11,7 +11,9 @@ const getDeviceDisplayName = (deviceId: string): string => {
     'kpcl0022': 'Collar Luna',
   };
   
+  // Normalizar el ID del dispositivo para la búsqueda
   const normalizedDeviceId = deviceId.toLowerCase();
+  // Usar el nombre amigable si existe, o el nombre original
   return deviceMap[normalizedDeviceId] || deviceId;
 };
 
