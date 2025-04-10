@@ -182,7 +182,26 @@ export class MemStorage implements IStorage {
 
   // Device operations
   async getDevices(): Promise<Device[]> {
-    return Array.from(this.devices.values());
+    // Obtener todos los dispositivos
+    const allDevices = Array.from(this.devices.values());
+    
+    // Crear un mapa para rastrear dispositivos únicos por deviceId
+    const uniqueDevicesMap = new Map<string, Device>();
+    
+    // Para cada dispositivo, si ya existe uno con el mismo deviceId, mantener solo el más reciente
+    for (const device of allDevices) {
+      const existingDevice = uniqueDevicesMap.get(device.deviceId);
+      
+      // Si no existe un dispositivo con este deviceId o el actual es más reciente, guardarlo
+      if (!existingDevice || 
+          (device.lastUpdate && existingDevice.lastUpdate && 
+           device.lastUpdate > existingDevice.lastUpdate)) {
+        uniqueDevicesMap.set(device.deviceId, device);
+      }
+    }
+    
+    // Convertir el mapa a un array de dispositivos
+    return Array.from(uniqueDevicesMap.values());
   }
 
   async getDevice(id: number): Promise<Device | undefined> {
@@ -190,9 +209,20 @@ export class MemStorage implements IStorage {
   }
 
   async getDeviceByDeviceId(deviceId: string): Promise<Device | undefined> {
-    return Array.from(this.devices.values()).find(
-      (device) => device.deviceId === deviceId,
-    );
+    // Obtener todos los dispositivos con este deviceId
+    const matchingDevices = Array.from(this.devices.values())
+      .filter((device) => device.deviceId === deviceId);
+    
+    if (matchingDevices.length === 0) {
+      return undefined;
+    }
+    
+    // Si hay varios dispositivos con el mismo deviceId, retornar el más reciente
+    return matchingDevices.sort((a, b) => {
+      if (!a.lastUpdate) return 1;
+      if (!b.lastUpdate) return -1;
+      return b.lastUpdate.getTime() - a.lastUpdate.getTime();
+    })[0];
   }
 
   async createDevice(insertDevice: InsertDevice): Promise<Device> {
@@ -265,7 +295,7 @@ export class MemStorage implements IStorage {
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       
       // Group by sensor type to get the latest reading for each type
-      const sensorTypes = new Set(deviceData.map(data => data.sensorType));
+      const sensorTypes = Array.from(new Set(deviceData.map(data => data.sensorType)));
       
       for (const type of sensorTypes) {
         const latestData = deviceData.find(data => data.sensorType === type);
@@ -332,10 +362,8 @@ export class MemStorage implements IStorage {
     const activeDevices = devices.filter(device => device.status === "online").length;
     
     // Count unique sensor types across all devices
-    const sensorTypes = new Set<string>();
-    for (const data of this.sensorData) {
-      sensorTypes.add(`${data.deviceId}-${data.sensorType}`);
-    }
+    const sensorTypeKeys = this.sensorData.map(data => `${data.deviceId}-${data.sensorType}`);
+    const uniqueSensorTypes = Array.from(new Set(sensorTypeKeys));
     
     // Count alerts (devices with warning status)
     const alerts = devices.filter(device => device.status === "warning").length;
@@ -350,7 +378,7 @@ export class MemStorage implements IStorage {
     
     return {
       activeDevices,
-      activeSensors: sensorTypes.size,
+      activeSensors: uniqueSensorTypes.length,
       alerts,
       lastUpdate: lastUpdate.toISOString()
     };

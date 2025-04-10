@@ -82,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             password: petOwner.password,
             name: `${petOwner.name} ${petOwner.paternalLastName}`,
             role: 'owner',
-            lastLogin: petOwner.updatedAt.toISOString()
+            lastLogin: new Date()
           };
           console.log(`Usuario creado desde propietario: ${JSON.stringify(user)}`);
         }
