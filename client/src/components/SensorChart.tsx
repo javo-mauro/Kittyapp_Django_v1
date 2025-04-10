@@ -186,25 +186,25 @@ export default function SensorChart({
               text: sensorType === 'temperature' ? 'Temperatura (°C)' : 
                    sensorType === 'humidity' ? 'Humedad (%)' : 
                    sensorType === 'light' ? 'Intensidad de Luz (lux)' : 
-                   sensorType === 'weight' ? 'Peso (kg)' : 'Valor',
+                   sensorType === 'weight' ? 'Peso (g)' : 'Valor',
             },
-            beginAtZero: sensorType !== 'temperature' && sensorType !== 'weight',
+            beginAtZero: sensorType !== 'temperature',
             suggestedMin: sensorType === 'temperature' ? 20 : 
-                         sensorType === 'humidity' ? 30 : 
+                         sensorType === 'humidity' ? 0 : 
                          sensorType === 'light' ? 0 : 
-                         sensorType === 'weight' ? -0.1 : 0, // Ajuste para mostrar valores negativos de peso
+                         sensorType === 'weight' ? 0 : 0,
             suggestedMax: sensorType === 'temperature' ? 35 : 
                          sensorType === 'humidity' ? 100 : 
-                         sensorType === 'light' ? 40 : 
-                         sensorType === 'weight' ? 0.5 : 100, // Ajuste para mostrar valores pequeños de peso
+                         sensorType === 'light' ? 500 : 
+                         sensorType === 'weight' ? 500 : 100,
             grace: '5%', // Añadir un pequeño margen
             ticks: {
               // Configuración de ticks más precisos para cada tipo de sensor
-              precision: sensorType === 'weight' ? 3 : 1, // Mayor precisión decimal para el peso
-              stepSize: sensorType === 'weight' ? 0.05 : // Pasos pequeños para peso
+              precision: sensorType === 'weight' ? 1 : 1, // Precisión decimal normal para todos
+              stepSize: sensorType === 'weight' ? 50 : // Pasos para peso en gramos
                         sensorType === 'temperature' ? 1 : // Grados
                         sensorType === 'humidity' ? 10 : // Porcentaje
-                        sensorType === 'light' ? 5 : 10, // Intensidad de luz
+                        sensorType === 'light' ? 50 : 10, // Intensidad de luz en lux
             },
           },
           x: {
@@ -531,8 +531,11 @@ export default function SensorChart({
       }
     });
     
-    // Actualizar el gráfico con solo un pequeño parpadeo
+    // Actualizar el gráfico sin animación
     chart.update('none');
+    
+    // Asegurarnos de que se muestre correctamente
+    setTimeout(() => chart.update('none'), 100);
   }, [readingsHistory, chartType, colorScheme, deviceFilter]);
   
   return (
