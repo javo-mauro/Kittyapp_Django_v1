@@ -186,16 +186,26 @@ export default function SensorChart({
               text: sensorType === 'temperature' ? 'Temperatura (°C)' : 
                    sensorType === 'humidity' ? 'Humedad (%)' : 
                    sensorType === 'light' ? 'Intensidad de Luz (lux)' : 
-                   sensorType === 'weight' ? 'Peso (g)' : 'Valor',
+                   sensorType === 'weight' ? 'Peso (kg)' : 'Valor',
             },
-            suggestedMin: sensorType === 'temperature' ? 15 : 
+            beginAtZero: sensorType !== 'temperature' && sensorType !== 'weight',
+            suggestedMin: sensorType === 'temperature' ? 20 : 
                          sensorType === 'humidity' ? 30 : 
                          sensorType === 'light' ? 0 : 
-                         sensorType === 'weight' ? 0 : 0,
-            suggestedMax: sensorType === 'temperature' ? 30 : 
-                         sensorType === 'humidity' ? 80 : 
-                         sensorType === 'light' ? 1500 : 
-                         sensorType === 'weight' ? 600 : 100,
+                         sensorType === 'weight' ? -0.1 : 0, // Ajuste para mostrar valores negativos de peso
+            suggestedMax: sensorType === 'temperature' ? 35 : 
+                         sensorType === 'humidity' ? 100 : 
+                         sensorType === 'light' ? 40 : 
+                         sensorType === 'weight' ? 0.5 : 100, // Ajuste para mostrar valores pequeños de peso
+            grace: '5%', // Añadir un pequeño margen
+            ticks: {
+              // Configuración de ticks más precisos para cada tipo de sensor
+              precision: sensorType === 'weight' ? 3 : 1, // Mayor precisión decimal para el peso
+              stepSize: sensorType === 'weight' ? 0.05 : // Pasos pequeños para peso
+                        sensorType === 'temperature' ? 1 : // Grados
+                        sensorType === 'humidity' ? 10 : // Porcentaje
+                        sensorType === 'light' ? 5 : 10, // Intensidad de luz
+            },
           },
           x: {
             title: {
@@ -204,15 +214,12 @@ export default function SensorChart({
             }
           }
         },
-        // Configuración de animaciones más suaves
-        animation: {
-          duration: 800, // Duración más larga para transiciones más suaves
-          easing: 'easeOutQuad', // Curva de easing más suave
-        },
+        // Desactivar animaciones para que los datos se actualicen de inmediato
+        animation: false,
         transitions: {
           active: {
             animation: {
-              duration: 800
+              duration: 0
             }
           }
         },
