@@ -337,6 +337,24 @@ class MqttClient {
           connections.clientCert || undefined,
           connections.privateKey || undefined
         );
+        
+        // Asegurarnos de que estamos suscritos a ambos tópicos KPCL0021/pub y KPCL0022/pub
+        this.addTopic('KPCL0021');
+        this.addTopic('KPCL0022');
+        
+        // Verificar si el dispositivo KPCL0022 existe, si no, crearlo
+        let device = await storage.getDeviceByDeviceId('KPCL0022');
+        if (!device) {
+          device = await storage.createDevice({
+            deviceId: 'KPCL0022',
+            name: 'Kitty Paw de Amanda',
+            type: 'KittyPaw Locator',
+            status: 'online',
+            batteryLevel: 100
+          });
+          log('Created default device KPCL0022', 'mqtt');
+        }
+        
         return true;
       } else {
         // Use a public MQTT broker for testing if no connection is configured
@@ -353,6 +371,24 @@ class MqttClient {
         
         this.connectionId = newConnection.id;
         await this.connect(defaultBrokerUrl, defaultClientId);
+        
+        // Asegurarnos de que estamos suscritos a ambos tópicos KPCL0021/pub y KPCL0022/pub
+        this.addTopic('KPCL0021');
+        this.addTopic('KPCL0022');
+        
+        // Verificar si el dispositivo KPCL0022 existe, si no, crearlo
+        let device = await storage.getDeviceByDeviceId('KPCL0022');
+        if (!device) {
+          device = await storage.createDevice({
+            deviceId: 'KPCL0022',
+            name: 'Kitty Paw de Amanda',
+            type: 'KittyPaw Locator',
+            status: 'online',
+            batteryLevel: 100
+          });
+          log('Created default device KPCL0022', 'mqtt');
+        }
+        
         return true;
       }
     } catch (error) {
@@ -367,8 +403,8 @@ class MqttClient {
       return;
     }
     
-    // Solo generar datos para el tópico KPCL0021/pub con el formato especificado
-    const kpcData = {
+    // Generar datos para KPCL0021
+    const kpcData1 = {
       device_id: "KPCL0021",
       timestamp: new Date().toISOString(),
       humidity: Math.random() * 30 + 40, // 40-70%
@@ -377,11 +413,28 @@ class MqttClient {
       weight: Math.floor(Math.random() * 500) + 100 // 100-600g
     };
     
-    const kpcMessage = JSON.stringify(kpcData);
+    const kpcMessage1 = JSON.stringify(kpcData1);
     
     if (this.client && this.client.connected) {
-      this.client.publish('KPCL0021/pub', kpcMessage);
-      log(`Published test message to KPCL0021/pub: ${kpcMessage}`, 'mqtt');
+      this.client.publish('KPCL0021/pub', kpcMessage1);
+      log(`Published test message to KPCL0021/pub: ${kpcMessage1}`, 'mqtt');
+    }
+    
+    // Generar datos para KPCL0022
+    const kpcData2 = {
+      device_id: "KPCL0022",
+      timestamp: new Date().toISOString(),
+      humidity: Math.random() * 30 + 40, // 40-70%
+      temperature: Math.random() * 10 + 20, // 20-30°C
+      light: Math.random() * 1000 + 200, // 200-1200 lux
+      weight: Math.floor(Math.random() * 500) + 100 // 100-600g
+    };
+    
+    const kpcMessage2 = JSON.stringify(kpcData2);
+    
+    if (this.client && this.client.connected) {
+      this.client.publish('KPCL0022/pub', kpcMessage2);
+      log(`Published test message to KPCL0022/pub: ${kpcMessage2}`, 'mqtt');
     }
   }
 }
