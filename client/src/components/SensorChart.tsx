@@ -524,8 +524,8 @@ export default function SensorChart({
       }
     });
     
-    // Actualizar el gráfico con una transición suave cada vez que hay nuevos datos
-    chart.update();
+    // Actualizar el gráfico con solo un pequeño parpadeo
+    chart.update('none');
   }, [readingsHistory, chartType, colorScheme, deviceFilter]);
   
   return (
