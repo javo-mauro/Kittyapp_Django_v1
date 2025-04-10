@@ -7,8 +7,8 @@ import { format } from 'date-fns';
 // Función para mostrar nombres más amigables para los dispositivos
 const getDeviceDisplayName = (deviceId: string): string => {
   const deviceMap: Record<string, string> = {
-    'kpcl0021': 'Collar Malto',
-    'kpcl0022': 'Collar Luna',
+    'kpcl0021': 'Collar de Malto',
+    'kpcl0022': 'Placa de Canela',
   };
   
   // Normalizar el ID del dispositivo para la búsqueda
@@ -31,7 +31,7 @@ export default function SensorChart({
   sensorType, 
   chartType = 'line', 
   height = 'h-64',
-  colorScheme = ['#3f51b5', '#ff4081', '#4caf50', '#ff9800'],
+  colorScheme = ['#E84A5F', '#2A363B', '#99B898', '#FF847C', '#FECEAB', '#6C5B7B'],
   deviceFilter
 }: SensorChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
@@ -104,19 +104,36 @@ export default function SensorChart({
       return format(d, 'HH:mm:ss');
     });
     
+    // Asignar colores fijos a cada dispositivo basados en su ID para mantener consistencia
+    const getDeviceColorIndex = (deviceId: string): number => {
+      // Asignación fija de colores por dispositivo
+      const colorMapping: Record<string, number> = {
+        'kpcl0021': 0, // Collar de Malto: rojo
+        'kpcl0022': 1, // Placa de Canela: azul oscuro
+      };
+      
+      const normalizedDeviceId = deviceId.toLowerCase();
+      return colorMapping[normalizedDeviceId] !== undefined 
+        ? colorMapping[normalizedDeviceId] 
+        : Object.keys(deviceReadings).indexOf(deviceId) % colorScheme.length;
+    };
+    
     // Generate datasets (solo para los dispositivos filtrados)
-    const datasets = Object.entries(deviceReadings).map(([deviceId, data], index) => {
+    const datasets = Object.entries(deviceReadings).map(([deviceId, data]) => {
       // Si hay un filtro de dispositivo y este no es el dispositivo, ignorar
       if (deviceFilter && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return null;
       }
       
+      const colorIdx = getDeviceColorIndex(deviceId);
+      
       return {
         label: getDeviceDisplayName(deviceId),
         // Inicializar con un array de valores nulos - se actualizarán con datos reales
         data: Array(9).fill(null),
-        borderColor: colorScheme[index % colorScheme.length],
-        backgroundColor: `${colorScheme[index % colorScheme.length]}1A`, // Add 10% opacity
+        borderColor: colorScheme[colorIdx],
+        backgroundColor: `${colorScheme[colorIdx]}1A`, // Add 10% opacity
+        borderWidth: 2,
         tension: 0.3,
         fill: chartType === 'line',
       };
@@ -290,18 +307,33 @@ export default function SensorChart({
     } 
     // Si el filtro es "all", asegurarse de que estén todos los dispositivos representados
     else if (deviceFilter === 'all') {
+      // Asignar colores fijos a cada dispositivo basados en su ID para mantener consistencia
+      const getDeviceColorIndex = (deviceId: string): number => {
+        // Asignación fija de colores por dispositivo
+        const colorMapping: Record<string, number> = {
+          'kpcl0021': 0, // Collar de Malto: rojo
+          'kpcl0022': 1, // Placa de Canela: azul oscuro
+        };
+        
+        const normalizedDeviceId = deviceId.toLowerCase();
+        return colorMapping[normalizedDeviceId] !== undefined 
+          ? colorMapping[normalizedDeviceId] 
+          : Object.keys(readingsHistory).indexOf(deviceId) % colorScheme.length;
+      };
+      
       // Eliminar datasets que puedan estar duplicados
       const existingLabels = new Set(chart.data.datasets.map(ds => ds.label));
       
       // Añadir datasets para dispositivos que no tengan uno
-      Object.keys(readingsHistory).forEach((deviceId, index) => {
+      Object.keys(readingsHistory).forEach((deviceId) => {
         if (!existingLabels.has(getDeviceDisplayName(deviceId)) && readingsHistory[deviceId].length > 0) {
-          const colorIndex = chart.data.datasets.length % colorScheme.length;
+          const colorIdx = getDeviceColorIndex(deviceId);
           chart.data.datasets.push({
             label: getDeviceDisplayName(deviceId),
             data: Array(9).fill(null),
-            borderColor: colorScheme[colorIndex],
-            backgroundColor: `${colorScheme[colorIndex]}1A`,
+            borderColor: colorScheme[colorIdx],
+            backgroundColor: `${colorScheme[colorIdx]}1A`,
+            borderWidth: 2, 
             tension: 0.3,
             fill: chartType === 'line',
           });
@@ -321,12 +353,27 @@ export default function SensorChart({
       
       // Si no existe el dataset para este dispositivo, lo creamos
       if (datasetIndex === -1 && deviceReadings.length > 0) {
-        const colorIndex = chart.data.datasets.length % colorScheme.length;
+        // Asignar colores fijos a cada dispositivo basados en su ID para mantener consistencia
+        const getDeviceColorIndex = (deviceId: string): number => {
+          // Asignación fija de colores por dispositivo
+          const colorMapping: Record<string, number> = {
+            'kpcl0021': 0, // Collar de Malto: rojo
+            'kpcl0022': 1, // Placa de Canela: azul oscuro
+          };
+          
+          const normalizedDeviceId = deviceId.toLowerCase();
+          return colorMapping[normalizedDeviceId] !== undefined 
+            ? colorMapping[normalizedDeviceId] 
+            : chart.data.datasets.length % colorScheme.length;
+        };
+        
+        const colorIdx = getDeviceColorIndex(deviceId);
         const newDataset = {
           label: getDeviceDisplayName(deviceId),
           data: Array(9).fill(null),
-          borderColor: colorScheme[colorIndex],
-          backgroundColor: `${colorScheme[colorIndex]}1A`,
+          borderColor: colorScheme[colorIdx],
+          backgroundColor: `${colorScheme[colorIdx]}1A`,
+          borderWidth: 2,
           tension: 0.3,
           fill: chartType === 'line',
         };
