@@ -136,10 +136,10 @@ export default function SensorChart({
     };
     
     // Generate datasets (solo para los dispositivos filtrados, en orden consistente)
-    const orderedDeviceEntries = getOrderedDeviceList(Object.keys(deviceReadings))
-      .map(deviceId => [deviceId, deviceReadings[deviceId]] as [string, any[]]);
+    const orderedDeviceEntries: Array<[string, any[]]> = getOrderedDeviceList(Object.keys(deviceReadings))
+      .map(deviceId => [deviceId, deviceReadings[deviceId]]);
       
-    const datasets = orderedDeviceEntries.map(([deviceId, data]: [string, any[]]) => {
+    const datasets = orderedDeviceEntries.map(([deviceId, data]) => {
       // Si hay un filtro de dispositivo y este no es el dispositivo, ignorar
       if (deviceFilter && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return null;
@@ -360,10 +360,10 @@ export default function SensorChart({
     }
     
     // Actualizar cada conjunto de datos con los datos del historial, en orden consistente
-    const orderedDeviceEntries = getOrderedDeviceList(Object.keys(readingsHistory))
-      .map(deviceId => [deviceId, readingsHistory[deviceId]] as [string, any[]]);
+    const orderedDeviceEntries: Array<[string, any[]]> = getOrderedDeviceList(Object.keys(readingsHistory))
+      .map(deviceId => [deviceId, readingsHistory[deviceId]]);
     
-    orderedDeviceEntries.forEach(([deviceId, deviceReadings]: [string, any[]]) => {
+    orderedDeviceEntries.forEach(([deviceId, deviceReadings]) => {
       // Si hay filtro de dispositivo específico (no "all") y este no es el dispositivo, ignorar
       if (deviceFilter && deviceFilter !== 'all' && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return;
