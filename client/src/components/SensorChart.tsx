@@ -14,7 +14,24 @@ const getDeviceDisplayName = (deviceId: string): string => {
   // Normalizar el ID del dispositivo para la búsqueda
   const normalizedDeviceId = deviceId.toLowerCase();
   // Usar el nombre amigable si existe, o el nombre original
-  return deviceMap[normalizedDeviceId] || deviceId;
+  return deviceMap[normalizedDeviceId] 
+    ? `${deviceMap[normalizedDeviceId]} (${deviceId})` 
+    : deviceId;
+};
+
+// Ordenamiento consistente de dispositivos para mantener leyendas estables
+const getOrderedDeviceList = (devices: string[]): string[] => {
+  // Definimos un orden fijo de dispositivos conocidos
+  const deviceOrder: Record<string, number> = {
+    'kpcl0021': 1, // Collar de Malto siempre primero
+    'kpcl0022': 2  // Placa de Canela siempre segundo
+  };
+  
+  return [...devices].sort((a, b) => {
+    const orderA = deviceOrder[a.toLowerCase()] || 999;
+    const orderB = deviceOrder[b.toLowerCase()] || 999;
+    return orderA - orderB;
+  });
 };
 
 interface SensorChartProps {
@@ -118,8 +135,11 @@ export default function SensorChart({
         : Math.abs(normalizedDeviceId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % colorScheme.length;
     };
     
-    // Generate datasets (solo para los dispositivos filtrados)
-    const datasets = Object.entries(deviceReadings).map(([deviceId, data]) => {
+    // Generate datasets (solo para los dispositivos filtrados, en orden consistente)
+    const orderedDeviceEntries = getOrderedDeviceList(Object.keys(deviceReadings))
+      .map(deviceId => [deviceId, deviceReadings[deviceId]] as [string, any[]]);
+      
+    const datasets = orderedDeviceEntries.map(([deviceId, data]: [string, any[]]) => {
       // Si hay un filtro de dispositivo y este no es el dispositivo, ignorar
       if (deviceFilter && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return null;
@@ -320,8 +340,10 @@ export default function SensorChart({
       // Eliminar datasets que puedan estar duplicados
       const existingLabels = new Set(chart.data.datasets.map(ds => ds.label));
       
-      // Añadir datasets para dispositivos que no tengan uno
-      Object.keys(readingsHistory).forEach((deviceId) => {
+      // Añadir datasets para dispositivos que no tengan uno, en orden consistente
+      // Ordenar los dispositivos para mantener el orden de las leyendas consistente
+      const orderedDevices = getOrderedDeviceList(Object.keys(readingsHistory));
+      orderedDevices.forEach((deviceId) => {
         if (!existingLabels.has(getDeviceDisplayName(deviceId)) && readingsHistory[deviceId].length > 0) {
           const colorIdx = getDeviceColorIndex(deviceId);
           chart.data.datasets.push({
@@ -337,8 +359,11 @@ export default function SensorChart({
       });
     }
     
-    // Actualizar cada conjunto de datos con los datos del historial
-    Object.entries(readingsHistory).forEach(([deviceId, deviceReadings]) => {
+    // Actualizar cada conjunto de datos con los datos del historial, en orden consistente
+    const orderedDeviceEntries = getOrderedDeviceList(Object.keys(readingsHistory))
+      .map(deviceId => [deviceId, readingsHistory[deviceId]] as [string, any[]]);
+    
+    orderedDeviceEntries.forEach(([deviceId, deviceReadings]: [string, any[]]) => {
       // Si hay filtro de dispositivo específico (no "all") y este no es el dispositivo, ignorar
       if (deviceFilter && deviceFilter !== 'all' && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return;
