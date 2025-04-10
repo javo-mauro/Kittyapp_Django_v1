@@ -113,11 +113,11 @@ export default function SensorChart({
       deviceReadings[reading.deviceId].push(reading);
     });
     
-    // Generate labels (time labels) - escala de 4 horas, con puntos cada 10 minutos (24 puntos)
+    // Generate labels (time labels) - escala de 1 hora, con puntos cada 1 minuto (60 puntos)
     const now = new Date();
-    const labels = Array.from({ length: 24 }, (_, i) => {
+    const labels = Array.from({ length: 60 }, (_, i) => {
       const d = new Date(now);
-      d.setMinutes(d.getMinutes() - 240 + (i * 10)); // 4 horas = 240 minutos
+      d.setMinutes(d.getMinutes() - 60 + i); // 1 hora = 60 minutos
       return format(d, 'HH:mm');
     });
     
@@ -150,7 +150,7 @@ export default function SensorChart({
       return {
         label: getDeviceDisplayName(deviceId),
         // Inicializar con un array de valores nulos - se actualizarán con datos reales
-        data: Array(24).fill(null), // 24 puntos para 4 horas (1 cada 10 min)
+        data: Array(60).fill(null), // 60 puntos para 1 hora (1 por minuto)
         borderColor: colorScheme[colorIdx],
         backgroundColor: 'transparent',  // Sin fondo
         borderWidth: 2,
@@ -260,8 +260,8 @@ export default function SensorChart({
       );
       
       if (existingIndex === -1) {
-        // Limitar el tamaño del historial a 240 elementos (para 4 horas)
-        if (updatedHistory[reading.deviceId].length >= 240) {
+        // Limitar el tamaño del historial a 60 elementos (para 1 hora)
+        if (updatedHistory[reading.deviceId].length >= 60) {
           updatedHistory[reading.deviceId].shift();
         }
         updatedHistory[reading.deviceId].push(reading);
@@ -280,15 +280,15 @@ export default function SensorChart({
     
     const chart = chartInstance.current;
     
-    // Generar etiquetas de tiempo para un período de 4 horas (24 puntos, cada 10 minutos)
+    // Generar etiquetas de tiempo para un período de 1 hora (60 puntos, cada 1 minuto)
     const timeLabels = [];
     const now = new Date();
     
-    // Generar etiquetas de tiempo de las últimas 4 horas en intervalos de 10 minutos
-    for (let i = 0; i < 24; i++) {
+    // Generar etiquetas de tiempo de la última hora en intervalos de 1 minuto
+    for (let i = 0; i < 60; i++) {
       const timestamp = new Date(now);
-      // Retroceder 4 horas (240 minutos) y avanzar de 10 en 10 minutos
-      timestamp.setMinutes(timestamp.getMinutes() - 240 + (i * 10));
+      // Retroceder 1 hora (60 minutos) y avanzar de 1 en 1 minuto
+      timestamp.setMinutes(timestamp.getMinutes() - 60 + i);
       timeLabels.push(format(timestamp, 'HH:mm'));
     }
     
@@ -312,7 +312,7 @@ export default function SensorChart({
         if (deviceId) {
           chart.data.datasets.push({
             label: getDeviceDisplayName(deviceId),
-            data: Array(24).fill(null),
+            data: Array(60).fill(null),
             borderColor: colorScheme[0],
             backgroundColor: 'transparent',
             tension: 0.3,
@@ -348,7 +348,7 @@ export default function SensorChart({
           const colorIdx = getDeviceColorIndex(deviceId);
           chart.data.datasets.push({
             label: getDeviceDisplayName(deviceId),
-            data: Array(24).fill(null),
+            data: Array(60).fill(null),
             borderColor: colorScheme[colorIdx],
             backgroundColor: 'transparent',
             borderWidth: 2, 
@@ -391,7 +391,7 @@ export default function SensorChart({
         const colorIdx = getDeviceColorIndex(deviceId);
         const newDataset = {
           label: getDeviceDisplayName(deviceId),
-          data: Array(24).fill(null),
+          data: Array(60).fill(null),
           borderColor: colorScheme[colorIdx],
           backgroundColor: 'transparent',
           borderWidth: 2,
@@ -403,8 +403,8 @@ export default function SensorChart({
       }
       
       if (datasetIndex !== -1) {
-        // Preparar los datos para el gráfico (últimos 24 valores para 4 horas)
-        const numDataPoints = Math.min(24, deviceReadings.length);
+        // Preparar los datos para el gráfico (últimos 60 valores para 1 hora)
+        const numDataPoints = Math.min(60, deviceReadings.length);
         const values = [];
         
         for (let i = deviceReadings.length - numDataPoints; i < deviceReadings.length; i++) {
@@ -414,7 +414,7 @@ export default function SensorChart({
         }
         
         // Rellenar con nulos si no tenemos suficientes valores
-        while (values.length < 24) {
+        while (values.length < 60) {
           values.unshift(null);
         }
         
@@ -422,8 +422,8 @@ export default function SensorChart({
       }
     });
     
-    // Actualizar el gráfico con una transición suave
-    chart.update('none');
+    // Actualizar el gráfico con una transición suave cada vez que hay nuevos datos
+    chart.update();
   }, [readingsHistory, chartType, colorScheme, deviceFilter]);
   
   return (
