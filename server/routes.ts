@@ -212,8 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.createSensorData({
                 deviceId: 'KPCL0021',
                 sensorType: type,
-                data: { value, unit },
-                timestamp: pastTime.toISOString()
+                data: { value, unit }
               });
             }
           }
@@ -616,6 +615,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error subscribing to MQTT topic:", error);
       return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Endpoint para generar datos simulados para un dispositivo específico
+  app.post('/api/simulate-data', async (req: Request, res: Response) => {
+    try {
+      const { deviceId } = req.body;
+      
+      if (!deviceId) {
+        return res.status(400).json({ error: "Device ID is required" });
+      }
+      
+      // Simular datos para diferentes tipos de sensores
+      const sensorTypes = ['temperature', 'humidity', 'light', 'weight'];
+      const now = new Date();
+      
+      const generatedData = [];
+      
+      for (const sensorType of sensorTypes) {
+        let value = 0;
+        let unit = '';
+        
+        switch (sensorType) {
+          case 'temperature':
+            value = 20 + Math.random() * 10; // Entre 20 y 30
+            unit = '°C';
+            break;
+          case 'humidity':
+            value = 30 + Math.random() * 50; // Entre 30 y 80
+            unit = '%';
+            break;
+          case 'light':
+            value = Math.floor(Math.random() * 1000); // Entre 0 y 1000
+            unit = 'lux';
+            break;
+          case 'weight':
+            value = 4 + Math.random() * 2; // Entre 4 y 6
+            unit = 'kg';
+            break;
+        }
+        
+        // Crear el registro de datos del sensor
+        const sensorData = await storage.createSensorData({
+          deviceId,
+          sensorType,
+          data: { value, unit }
+        });
+        
+        generatedData.push(sensorData);
+      }
+      
+      // Actualizar el estado del dispositivo y la batería
+      await storage.updateDeviceStatus(deviceId, 'online');
+      await storage.updateDeviceBattery(deviceId, 90 + Math.floor(Math.random() * 10)); // Entre 90 y 99
+      
+      return res.json({ 
+        success: true, 
+        message: `Datos simulados generados para ${deviceId}`,
+        data: generatedData
+      });
+    } catch (error) {
+      console.error("Error generando datos simulados:", error);
+      return res.status(500).json({ error: "Error interno del servidor" });
     }
   });
   
