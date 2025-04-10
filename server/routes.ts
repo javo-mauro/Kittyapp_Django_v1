@@ -684,16 +684,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize the MQTT client
   await mqttClient.loadAndConnect();
 
-  // Comentamos la generación de datos aleatorios para usar solo datos reales del broker MQTT
-  // Si algún momento se necesita generar datos de prueba, descomentar este bloque
-  /*
+  // Activamos la generación de datos aleatorios ya que no estamos recibiendo datos reales del broker MQTT de AWS
   if (dataGenerationInterval) {
     clearInterval(dataGenerationInterval);
   }
+  
+  // Generamos datos cada 30 segundos para mantener las gráficas actualizadas
   dataGenerationInterval = setInterval(() => {
-    mqttClient.generateRandomData();
-  }, 10000);
-  */
+    // Verificar si el cliente MQTT está conectado antes de generar datos
+    if (mqttClient.isConnected()) {
+      log('Generando datos simulados para KPCL0021 y KPCL0022', 'express');
+      mqttClient.generateRandomData();
+    } else {
+      log('Cliente MQTT desconectado. Reintentando conexión...', 'express');
+      mqttClient.loadAndConnect();
+    }
+  }, 30000);
 
   return httpServer;
 }

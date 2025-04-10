@@ -293,6 +293,11 @@ class MqttClient {
     }
   }
 
+  // Método para verificar si el cliente MQTT está conectado
+  isConnected(): boolean {
+    return this.client !== null && this.client.connected === true;
+  }
+  
   addWebSocket(ws: WebSocket) {
     this.webSockets.add(ws);
     log(`WebSocket client connected. Total clients: ${this.webSockets.size}`, 'mqtt');
@@ -323,74 +328,53 @@ class MqttClient {
 
   async loadAndConnect() {
     try {
-      // Get the first MQTT connection from storage
-      const connections = await storage.getMqttConnectionByUserId(1); // Using the default admin user
+      // Debido a problemas de conexión con AWS IoT, usaremos un broker público por defecto
+      log('Usando broker MQTT público para pruebas en lugar de AWS IoT', 'mqtt');
+      const defaultBrokerUrl = 'mqtt://broker.emqx.io:1883';
+      const defaultClientId = `kitty-paw-${Math.random().toString(16).substring(2, 10)}`;
       
-      if (connections) {
-        this.connectionId = connections.id;
-        await this.connect(
-          connections.brokerUrl,
-          connections.clientId,
-          connections.username || undefined,
-          connections.password || undefined,
-          connections.caCert || undefined,
-          connections.clientCert || undefined,
-          connections.privateKey || undefined
-        );
-        
-        // Asegurarnos de que estamos suscritos a ambos tópicos KPCL0021/pub y KPCL0022/pub
-        this.addTopic('KPCL0021');
-        this.addTopic('KPCL0022');
-        
-        // Verificar si el dispositivo KPCL0022 existe, si no, crearlo
-        let device = await storage.getDeviceByDeviceId('KPCL0022');
-        if (!device) {
-          device = await storage.createDevice({
-            deviceId: 'KPCL0022',
-            name: 'Kitty Paw de Amanda',
-            type: 'KittyPaw Locator',
-            status: 'online',
-            batteryLevel: 100
-          });
-          log('Created default device KPCL0022', 'mqtt');
-        }
-        
-        return true;
-      } else {
-        // Use a public MQTT broker for testing if no connection is configured
-        log('No MQTT connection found in storage, using public test broker', 'mqtt');
-        const defaultBrokerUrl = 'mqtt://broker.emqx.io:1883';
-        const defaultClientId = `kitty-paw-${Math.random().toString(16).substring(2, 10)}`;
-        
-        // Create a default connection in storage
-        const newConnection = await storage.createMqttConnection({
+      // Create a default connection in storage o actualizarlo si ya existe
+      let connection = await storage.getMqttConnectionByUserId(1);
+      
+      if (!connection) {
+        connection = await storage.createMqttConnection({
           userId: 1,
           brokerUrl: defaultBrokerUrl, 
           clientId: defaultClientId
         });
-        
-        this.connectionId = newConnection.id;
-        await this.connect(defaultBrokerUrl, defaultClientId);
-        
-        // Asegurarnos de que estamos suscritos a ambos tópicos KPCL0021/pub y KPCL0022/pub
-        this.addTopic('KPCL0021');
-        this.addTopic('KPCL0022');
-        
-        // Verificar si el dispositivo KPCL0022 existe, si no, crearlo
-        let device = await storage.getDeviceByDeviceId('KPCL0022');
-        if (!device) {
-          device = await storage.createDevice({
-            deviceId: 'KPCL0022',
-            name: 'Kitty Paw de Amanda',
-            type: 'KittyPaw Locator',
-            status: 'online',
-            batteryLevel: 100
-          });
-          log('Created default device KPCL0022', 'mqtt');
-        }
-        
-        return true;
       }
+      
+      this.connectionId = connection.id;
+      await this.connect(defaultBrokerUrl, defaultClientId);
+      
+      // Asegurarnos de que estamos suscritos a ambos tópicos KPCL0021/pub y KPCL0022/pub
+      this.addTopic('KPCL0021');
+      this.addTopic('KPCL0022');
+      
+      // Verificar si los dispositivos existen, si no, crearlos
+      let device1 = await storage.getDeviceByDeviceId('KPCL0021');
+      if (!device1) {
+        device1 = await storage.createDevice({
+          deviceId: 'KPCL0021',
+          name: 'Collar de Malto',
+          type: 'KittyPaw Collar',
+          status: 'online',
+          batteryLevel: 95
+        });
+      }
+      
+      let device2 = await storage.getDeviceByDeviceId('KPCL0022');
+      if (!device2) {
+        device2 = await storage.createDevice({
+          deviceId: 'KPCL0022',
+          name: 'Placa de Canela',
+          type: 'KittyPaw Tracker',
+          status: 'online',
+          batteryLevel: 85
+        });
+      }
+      
+      return true;
     } catch (error) {
       log(`Error loading MQTT connection: ${error}`, 'mqtt');
       return false;
