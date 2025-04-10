@@ -211,16 +211,21 @@ export default function Register() {
   // Manejar envío del formulario de mascota
   async function onSubmitPet(data: z.infer<typeof petFormSchema>) {
     try {
-      if (!ownerId) {
-        throw new Error("No se ha seleccionado un usuario. Por favor registre primero al usuario.");
+      const selectedOwnerId = data.ownerId;
+      if (!selectedOwnerId) {
+        toast({
+          title: "Error",
+          description: "Debes seleccionar un usuario para la mascota",
+          variant: "destructive"
+        });
+        return;
       }
 
-      console.log("Datos de mascota a enviar:", { ...data, ownerId });
+      console.log("Datos de mascota a enviar:", { ...data });
 
-      // Convertir las fechas a formato ISO string y asegurarnos de que ownerId está establecido
+      // Convertir las fechas a formato ISO string
       const formattedData = {
         ...data,
-        ownerId: ownerId, // Usar explícitamente el ownerId del estado
         acquisitionDate: data.acquisitionDate.toISOString(),
         birthDate: data.birthDate ? data.birthDate.toISOString() : undefined,
         lastVetVisit: data.lastVetVisit ? data.lastVetVisit.toISOString() : undefined
@@ -285,7 +290,7 @@ export default function Register() {
         >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="owner" className="text-lg py-4 bg-[#FF9F8F] data-[state=active]:bg-[#FF947C] text-white">Usuario</TabsTrigger>
-            <TabsTrigger value="pet" disabled={!ownerId} className="text-lg py-4 bg-[#FBAFA4] data-[state=active]:bg-[#FF947C] text-white">Mascota</TabsTrigger>
+            <TabsTrigger value="pet" className="text-lg py-4 bg-[#FBAFA4] data-[state=active]:bg-[#FF947C] text-white">Mascota</TabsTrigger>
           </TabsList>
 
           <TabsContent value="owner">
