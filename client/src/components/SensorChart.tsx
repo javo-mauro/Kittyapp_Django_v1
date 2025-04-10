@@ -31,7 +31,7 @@ export default function SensorChart({
   sensorType, 
   chartType = 'line', 
   height = 'h-64',
-  colorScheme = ['#FF847C', '#99B898', '#FECEAB', '#2A363B', '#E84A5F', '#A8E6CE'],
+  colorScheme = ['#FF847C', '#99B898', '#A8E6CE', '#FECEAB', '#E84A5F', '#6C5B7B'],
   deviceFilter
 }: SensorChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
@@ -96,12 +96,12 @@ export default function SensorChart({
       deviceReadings[reading.deviceId].push(reading);
     });
     
-    // Generate labels (time labels)
+    // Generate labels (time labels) - escala de 4 horas, con puntos cada 10 minutos (24 puntos)
     const now = new Date();
-    const labels = Array.from({ length: 9 }, (_, i) => {
+    const labels = Array.from({ length: 24 }, (_, i) => {
       const d = new Date(now);
-      d.setMinutes(d.getMinutes() - 8 + i);
-      return format(d, 'HH:mm:ss');
+      d.setMinutes(d.getMinutes() - 240 + (i * 10)); // 4 horas = 240 minutos
+      return format(d, 'HH:mm');
     });
     
     // Función para asignar colores fijos a dispositivos (global al componente)
@@ -130,12 +130,12 @@ export default function SensorChart({
       return {
         label: getDeviceDisplayName(deviceId),
         // Inicializar con un array de valores nulos - se actualizarán con datos reales
-        data: Array(9).fill(null),
+        data: Array(24).fill(null), // 24 puntos para 4 horas (1 cada 10 min)
         borderColor: colorScheme[colorIdx],
-        backgroundColor: `${colorScheme[colorIdx]}1A`, // Add 10% opacity
+        backgroundColor: 'transparent',  // Sin fondo
         borderWidth: 2,
         tension: 0.3,
-        fill: chartType === 'line',
+        fill: false, // No rellenar área bajo la curva
       };
     }).filter(Boolean);
     
@@ -240,8 +240,8 @@ export default function SensorChart({
       );
       
       if (existingIndex === -1) {
-        // Limitar el tamaño del historial a 30 elementos
-        if (updatedHistory[reading.deviceId].length >= 30) {
+        // Limitar el tamaño del historial a 240 elementos (para 4 horas)
+        if (updatedHistory[reading.deviceId].length >= 240) {
           updatedHistory[reading.deviceId].shift();
         }
         updatedHistory[reading.deviceId].push(reading);
@@ -260,41 +260,16 @@ export default function SensorChart({
     
     const chart = chartInstance.current;
     
-    // Actualizar etiquetas con las últimas marcas de tiempo
+    // Generar etiquetas de tiempo para un período de 4 horas (24 puntos, cada 10 minutos)
     const timeLabels = [];
     const now = new Date();
     
-    // Si hay un filtro de dispositivo, usar ese dispositivo para las etiquetas de tiempo
-    // Si no, usar el primer dispositivo disponible en el historial
-    const deviceToUse = deviceFilter ? 
-      Object.keys(readingsHistory).find(d => d.toLowerCase() === deviceFilter.toLowerCase()) :
-      Object.keys(readingsHistory)[0];
-    
-    if (deviceToUse && readingsHistory[deviceToUse] && readingsHistory[deviceToUse].length > 0) {
-      const deviceHistory = readingsHistory[deviceToUse];
-      // Obtener las últimas 9 marcas de tiempo o menos si no hay suficientes
-      const numLabels = Math.min(9, deviceHistory.length);
-      
-      for (let i = deviceHistory.length - numLabels; i < deviceHistory.length; i++) {
-        if (deviceHistory[i]) {
-          const timestamp = new Date(deviceHistory[i].timestamp);
-          timeLabels.push(format(timestamp, 'HH:mm:ss'));
-        }
-      }
-      
-      // Si no tenemos suficientes etiquetas, rellenamos con valores de tiempo actuales
-      while (timeLabels.length < 9) {
-        const timestamp = new Date(now);
-        timestamp.setMinutes(timestamp.getMinutes() - (9 - timeLabels.length));
-        timeLabels.unshift(format(timestamp, 'HH:mm:ss'));
-      }
-    } else {
-      // Usar etiquetas de tiempo generadas
-      for (let i = 0; i < 9; i++) {
-        const timestamp = new Date(now);
-        timestamp.setMinutes(timestamp.getMinutes() - (8 - i));
-        timeLabels.push(format(timestamp, 'HH:mm:ss'));
-      }
+    // Generar etiquetas de tiempo de las últimas 4 horas en intervalos de 10 minutos
+    for (let i = 0; i < 24; i++) {
+      const timestamp = new Date(now);
+      // Retroceder 4 horas (240 minutos) y avanzar de 10 en 10 minutos
+      timestamp.setMinutes(timestamp.getMinutes() - 240 + (i * 10));
+      timeLabels.push(format(timestamp, 'HH:mm'));
     }
     
     chart.data.labels = timeLabels;
@@ -317,11 +292,11 @@ export default function SensorChart({
         if (deviceId) {
           chart.data.datasets.push({
             label: getDeviceDisplayName(deviceId),
-            data: Array(9).fill(null),
+            data: Array(24).fill(null),
             borderColor: colorScheme[0],
-            backgroundColor: `${colorScheme[0]}1A`,
+            backgroundColor: 'transparent',
             tension: 0.3,
-            fill: chartType === 'line',
+            fill: false,
           });
         }
       }
@@ -351,12 +326,12 @@ export default function SensorChart({
           const colorIdx = getDeviceColorIndex(deviceId);
           chart.data.datasets.push({
             label: getDeviceDisplayName(deviceId),
-            data: Array(9).fill(null),
+            data: Array(24).fill(null),
             borderColor: colorScheme[colorIdx],
-            backgroundColor: `${colorScheme[colorIdx]}1A`,
+            backgroundColor: 'transparent',
             borderWidth: 2, 
             tension: 0.3,
-            fill: chartType === 'line',
+            fill: false,
           });
         }
       });
@@ -391,20 +366,20 @@ export default function SensorChart({
         const colorIdx = getDeviceColorIndex(deviceId);
         const newDataset = {
           label: getDeviceDisplayName(deviceId),
-          data: Array(9).fill(null),
+          data: Array(24).fill(null),
           borderColor: colorScheme[colorIdx],
-          backgroundColor: `${colorScheme[colorIdx]}1A`,
+          backgroundColor: 'transparent',
           borderWidth: 2,
           tension: 0.3,
-          fill: chartType === 'line',
+          fill: false,
         };
         chart.data.datasets.push(newDataset);
         datasetIndex = chart.data.datasets.length - 1;
       }
       
       if (datasetIndex !== -1) {
-        // Preparar los datos para el gráfico (últimos 9 valores o menos)
-        const numDataPoints = Math.min(9, deviceReadings.length);
+        // Preparar los datos para el gráfico (últimos 24 valores para 4 horas)
+        const numDataPoints = Math.min(24, deviceReadings.length);
         const values = [];
         
         for (let i = deviceReadings.length - numDataPoints; i < deviceReadings.length; i++) {
@@ -414,7 +389,7 @@ export default function SensorChart({
         }
         
         // Rellenar con nulos si no tenemos suficientes valores
-        while (values.length < 9) {
+        while (values.length < 24) {
           values.unshift(null);
         }
         
@@ -422,11 +397,8 @@ export default function SensorChart({
       }
     });
     
-    // Configuración para animaciones más suaves durante actualización
-    chart.update({
-      duration: 800, // Más tiempo para animaciones más suaves
-      easing: 'easeOutQuad', // Curva de aceleración más suave
-    });
+    // Actualizar el gráfico con una transición suave
+    chart.update('none');
   }, [readingsHistory, chartType, colorScheme, deviceFilter]);
   
   return (
