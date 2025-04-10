@@ -319,50 +319,22 @@ export default function SensorChart({
     // Ordenar timestamps cronológicamente
     allTimestamps.sort((a, b) => a.getTime() - b.getTime());
     
-    // Si no hay suficientes timestamps (menos de 2), generar un rango de tiempo completo
-    if (allTimestamps.length < 2) {
-      const now = new Date();
-      allTimestamps = []; // Limpiar array para evitar duplicados
-      
-      // Generar timestamps para la última hora (60 minutos)
-      for (let i = 0; i < 60; i++) {
-        const timestamp = new Date(now);
-        timestamp.setMinutes(timestamp.getMinutes() - 60 + i);
-        // Establecer segundos y milisegundos a 0 para tener minutos exactos
-        timestamp.setSeconds(0);
-        timestamp.setMilliseconds(0);
-        allTimestamps.push(timestamp);
-      }
-    } 
-    // Si hay timestamps pero no cubren toda la hora, asegurar que tengamos un rango completo
-    else if (allTimestamps.length < 60) {
-      // Obtener el primer y último timestamp
-      const firstTime = allTimestamps[0];
-      const lastTime = allTimestamps[allTimestamps.length - 1];
-      
-      // Calcular la diferencia de tiempo en minutos
-      const diffMinutes = Math.floor((lastTime.getTime() - firstTime.getTime()) / (1000 * 60));
-      
-      // Si la diferencia es menor a 60 minutos, completar con timestamps adicionales
-      if (diffMinutes < 59) {
-        // Añadir timestamps anteriores si es necesario
-        for (let i = 1; i <= 30; i++) {
-          const timestamp = new Date(firstTime);
-          timestamp.setMinutes(timestamp.getMinutes() - i);
-          allTimestamps.unshift(timestamp);
-        }
-        
-        // Añadir timestamps posteriores si es necesario
-        for (let i = 1; i <= 30; i++) {
-          const timestamp = new Date(lastTime);
-          timestamp.setMinutes(timestamp.getMinutes() + i);
-          allTimestamps.push(timestamp);
-        }
-        
-        // Reordenar después de añadir
-        allTimestamps.sort((a, b) => a.getTime() - b.getTime());
-      }
+    // SIEMPRE generar un rango completo de tiempo para asegurar 60 puntos
+    const now = new Date();
+    allTimestamps = []; // Limpiar array para evitar duplicados
+    
+    // Generar timestamps para la última hora (60 minutos)
+    for (let i = 0; i < 60; i++) {
+      const timestamp = new Date(now);
+      timestamp.setMinutes(timestamp.getMinutes() - 60 + i);
+      // Establecer segundos y milisegundos a 0 para tener minutos exactos
+      timestamp.setSeconds(0);
+      timestamp.setMilliseconds(0);
+      allTimestamps.push(timestamp);
     }
+    
+    // Ya hemos generado un conjunto completo de 60 marcas de tiempo
+    // No necesitamos agregar más timestamps o ajustar el rango
     
     // Eliminar duplicados después de ordenar (por si acaso)
     const uniqueTimestamps: Date[] = [];
