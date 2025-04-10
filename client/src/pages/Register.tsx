@@ -37,7 +37,7 @@ import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { PetOwner, Pet } from "@shared/schema";
 
-// Esquema para validar el formulario de dueño de mascota
+// Esquema para validar el formulario de registro de usuario
 const petOwnerFormSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
   paternalLastName: z.string().min(2, { message: "El apellido paterno debe tener al menos 2 caracteres" }),
@@ -98,7 +98,7 @@ export default function Register() {
     enabled: true
   });
 
-  // Configuración del formulario de dueño de mascota
+  // Configuración del formulario de registro de usuario
   const petOwnerForm = useForm<z.infer<typeof petOwnerFormSchema>>({
     resolver: zodResolver(petOwnerFormSchema),
     defaultValues: {
@@ -135,7 +135,7 @@ export default function Register() {
     }
   });
 
-  // Manejar envío del formulario de dueño de mascota
+  // Manejar envío del formulario de registro de usuario
   async function onSubmitPetOwner(data: z.infer<typeof petOwnerFormSchema>) {
     try {
       // Convertir las fechas a formato ISO string
@@ -284,16 +284,16 @@ export default function Register() {
           className="w-full max-w-3xl"
         >
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="owner" className="text-lg py-4 bg-[#FF9F8F] data-[state=active]:bg-[#FF947C] text-white">Dueño</TabsTrigger>
+            <TabsTrigger value="owner" className="text-lg py-4 bg-[#FF9F8F] data-[state=active]:bg-[#FF947C] text-white">Usuario</TabsTrigger>
             <TabsTrigger value="pet" disabled={!ownerId} className="text-lg py-4 bg-[#FBAFA4] data-[state=active]:bg-[#FF947C] text-white">Mascota</TabsTrigger>
           </TabsList>
 
           <TabsContent value="owner">
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl font-bold text-[#F87A6D]">Registro de Dueño</CardTitle>
+                <CardTitle className="text-2xl font-bold text-[#F87A6D]">Registro de Usuario</CardTitle>
                 <CardDescription>
-                  Por favor ingresa los datos del dueño de la mascota o inicia sesión con Google.
+                  Por favor ingresa tus datos o inicia sesión con Google.
                 </CardDescription>
                 <div className="mt-3 flex justify-center">
                   <Button 
@@ -500,7 +500,7 @@ export default function Register() {
                     </div>
 
                     <Button type="submit" className="w-full bg-[#FF897C] hover:bg-[#FF7A6C] text-white py-4 rounded-lg">
-                      Registrar Dueño
+                      Registrar Usuario
                     </Button>
                   </form>
                 </Form>
@@ -768,7 +768,7 @@ export default function Register() {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" onClick={() => setActiveTab("owner")} className="bg-[#FFDED9] hover:bg-[#FFD0C9] border-none text-[#FF7A6C] py-3 px-5 rounded-lg">
-                  Volver a Dueño
+                  Volver a Usuario
                 </Button>
               </CardFooter>
             </Card>
