@@ -68,7 +68,7 @@ const petFormSchema = z.object({
   diseaseNotes: z.string().optional(),
   lastVetVisit: z.date().optional(),
   kittyPawDeviceId: z.string().optional(),
-  ownerId: z.number()
+  ownerId: z.number({ required_error: "Debes seleccionar un usuario para esta mascota" })
 });
 
 export default function Register() {
@@ -249,7 +249,7 @@ export default function Register() {
       });
       
       // Resetear solo ciertos campos del formulario manteniendo el ownerId
-      const currentOwnerId = ownerId;
+      const currentOwnerId = data.ownerId;
       petForm.reset({
         name: "",
         chipNumber: "",
@@ -525,6 +525,36 @@ export default function Register() {
                 <Form {...petForm}>
                   <form onSubmit={petForm.handleSubmit(onSubmitPet)} className="space-y-6">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FormField
+                        control={petForm.control}
+                        name="ownerId"
+                        render={({ field }) => (
+                          <FormItem className="col-span-1 md:col-span-2">
+                            <FormLabel>Usuario</FormLabel>
+                            <Select 
+                              onValueChange={(value) => field.onChange(parseInt(value))} 
+                              defaultValue={field.value?.toString() || undefined}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecciona un usuario para esta mascota" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {petOwners.map((owner) => (
+                                  <SelectItem key={owner.id} value={owner.id.toString()}>
+                                    {owner.name} {owner.paternalLastName} ({owner.username})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Selecciona al usuario dueño de la mascota
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <FormField
                         control={petForm.control}
                         name="name"
