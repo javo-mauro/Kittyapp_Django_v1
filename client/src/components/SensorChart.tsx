@@ -38,12 +38,12 @@ export default function SensorChart({
     const matchesSensorType = reading.sensorType === sensorType;
     if (!matchesSensorType) return false;
     
-    // Si hay un filtro de dispositivo, aplicarlo
-    if (deviceFilter) {
+    // Si hay un filtro de dispositivo y no es "all", aplicarlo
+    if (deviceFilter && deviceFilter !== 'all') {
       return reading.deviceId.toLowerCase() === deviceFilter.toLowerCase();
     }
     
-    // Si no hay filtro, incluir todos los tipos de sensores coincidentes
+    // Si no hay filtro o el filtro es "all", incluir todos los tipos de sensores coincidentes
     return true;
   });
 
@@ -172,8 +172,8 @@ export default function SensorChart({
     const updatedHistory = { ...readingsHistory };
     
     filteredReadings.forEach(reading => {
-      // Si hay un filtro de dispositivo, solo procesar ese dispositivo
-      if (deviceFilter && reading.deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
+      // Si hay un filtro de dispositivo y no es "all", solo procesar ese dispositivo
+      if (deviceFilter && deviceFilter !== 'all' && reading.deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return;
       }
       
@@ -246,11 +246,11 @@ export default function SensorChart({
     
     chart.data.labels = timeLabels;
     
-    // Si hay un filtro, asegurarse de que solo se muestren los datasets de ese dispositivo
-    if (deviceFilter) {
+    // Si hay un filtro específico de dispositivo, mostrar solo ese dispositivo
+    if (deviceFilter && deviceFilter !== 'all') {
       // Primero eliminar cualquier dataset que no sea del dispositivo filtrado
-      chart.data.datasets = chart.data.datasets.filter(
-        ds => ds.label.toLowerCase() === deviceFilter.toLowerCase()
+      chart.data.datasets = chart.data.datasets.filter(ds => 
+        ds.label && ds.label.toLowerCase() === deviceFilter.toLowerCase()
       );
       
       // Si no hay datasets para este dispositivo, añadir uno
@@ -271,6 +271,26 @@ export default function SensorChart({
           });
         }
       }
+    } 
+    // Si el filtro es "all", asegurarse de que estén todos los dispositivos representados
+    else if (deviceFilter === 'all') {
+      // Eliminar datasets que puedan estar duplicados
+      const existingLabels = new Set(chart.data.datasets.map(ds => ds.label));
+      
+      // Añadir datasets para dispositivos que no tengan uno
+      Object.keys(readingsHistory).forEach((deviceId, index) => {
+        if (!existingLabels.has(deviceId) && readingsHistory[deviceId].length > 0) {
+          const colorIndex = chart.data.datasets.length % colorScheme.length;
+          chart.data.datasets.push({
+            label: deviceId,
+            data: Array(9).fill(null),
+            borderColor: colorScheme[colorIndex],
+            backgroundColor: `${colorScheme[colorIndex]}1A`,
+            tension: 0.3,
+            fill: chartType === 'line',
+          });
+        }
+      });
     }
     
     // Actualizar cada conjunto de datos con los datos del historial
@@ -326,9 +346,14 @@ export default function SensorChart({
       <div className="px-5 py-4 border-b border-neutral-100 flex justify-between items-center">
         <h3 className="font-medium">
           {title}
-          {deviceFilter && (
+          {deviceFilter && deviceFilter !== 'all' && (
             <span className="ml-2 text-sm text-gray-500">
               ({deviceFilter})
+            </span>
+          )}
+          {deviceFilter === 'all' && (
+            <span className="ml-2 text-sm text-gray-500">
+              (Todos los dispositivos)
             </span>
           )}
         </h3>
