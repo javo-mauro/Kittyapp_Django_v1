@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removido: import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Search, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -166,18 +166,8 @@ export default function Users() {
   // Manejar selección de usuario
   const handleUserSelect = async (user: User) => {
     setSelectedUser(user);
-    setSelectedOwner(null); // Limpiar selección de propietario
-    setPets([]); // Limpiar mascotas
     setSelectedItem("user");
     await fetchUserDevices(user.username);
-  };
-
-  // Manejar selección de propietario
-  const handleOwnerSelect = async (owner: PetOwner) => {
-    setSelectedOwner(owner);
-    setSelectedUser(null); // Limpiar selección de usuario
-    setSelectedItem("pet");
-    await fetchPetsByOwnerId(owner.id);
   };
 
   // Manejar selección de dispositivo
@@ -267,71 +257,7 @@ export default function Users() {
     );
   };
 
-  // Renderizar detalles del propietario
-  const renderOwnerDetails = () => {
-    if (!selectedOwner) return null;
-
-    return (
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-xl font-bold">
-            {selectedOwner.name} {selectedOwner.paternalLastName} {selectedOwner.maternalLastName || ""}
-          </h3>
-          <p className="text-sm text-gray-500">Email: {selectedOwner.email}</p>
-          <p className="text-sm text-gray-500">
-            Fecha de nacimiento: {new Date(selectedOwner.birthDate).toLocaleDateString()}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <h4 className="text-lg font-semibold">Mascotas</h4>
-          {detailsLoading ? (
-            <div className="flex justify-center p-4">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-            </div>
-          ) : pets.length > 0 ? (
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Especie</TableHead>
-                    <TableHead>Raza</TableHead>
-                    <TableHead>Chip</TableHead>
-                    <TableHead>Dispositivo KittyPaw</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pets.map((pet) => (
-                    <TableRow 
-                      key={pet.id}
-                      className="cursor-pointer hover:bg-gray-100"
-                    >
-                      <TableCell>{pet.name}</TableCell>
-                      <TableCell>{pet.species}</TableCell>
-                      <TableCell>{pet.breed}</TableCell>
-                      <TableCell>{pet.chipNumber}</TableCell>
-                      <TableCell>
-                        {pet.kittyPawDeviceId ? (
-                          <Badge variant="outline" className="bg-blue-50">
-                            {pet.kittyPawDeviceId}
-                          </Badge>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <p className="text-center text-gray-500 py-4">Este propietario no tiene mascotas registradas.</p>
-          )}
-        </div>
-      </div>
-    );
-  };
+  // Ya no necesitamos renderizar detalles de propietarios
 
   return (
     <div className="container py-8">
@@ -395,7 +321,7 @@ export default function Users() {
           </Card>
         </div>
 
-        {/* Panel derecho: Detalles del usuario/propietario seleccionado */}
+        {/* Panel derecho: Detalles del usuario seleccionado */}
         <div className="lg:col-span-2">
           <Card className="h-full">
             <CardHeader>
