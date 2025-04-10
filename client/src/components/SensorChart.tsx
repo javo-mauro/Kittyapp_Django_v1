@@ -60,6 +60,14 @@ export default function SensorChart({
     // La recreación se hará en el siguiente efecto
   }, [deviceFilter]);
   
+  // Función para obtener un nombre amigable para el dispositivo
+  const getDeviceDisplayName = (deviceId: string) => {
+    // Implementar lógica para mostrar nombres amigables
+    if (deviceId === 'KPCL0021') return 'Kitty Paw Device';
+    if (deviceId === 'KPCL0022') return 'Kitty Paw de Amanda';
+    return deviceId; // Fallback al ID si no hay nombre configurado
+  };
+
   // Crear o actualizar el gráfico
   useEffect(() => {
     if (!chartRef.current) return;
@@ -262,7 +270,7 @@ export default function SensorChart({
         
         if (deviceId) {
           chart.data.datasets.push({
-            label: deviceId,
+            label: getDeviceDisplayName(deviceId),
             data: Array(9).fill(null),
             borderColor: colorScheme[0],
             backgroundColor: `${colorScheme[0]}1A`,
@@ -282,7 +290,7 @@ export default function SensorChart({
         if (!existingLabels.has(deviceId) && readingsHistory[deviceId].length > 0) {
           const colorIndex = chart.data.datasets.length % colorScheme.length;
           chart.data.datasets.push({
-            label: deviceId,
+            label: getDeviceDisplayName(deviceId),
             data: Array(9).fill(null),
             borderColor: colorScheme[colorIndex],
             backgroundColor: `${colorScheme[colorIndex]}1A`,
@@ -295,8 +303,8 @@ export default function SensorChart({
     
     // Actualizar cada conjunto de datos con los datos del historial
     Object.entries(readingsHistory).forEach(([deviceId, deviceReadings]) => {
-      // Si hay filtro de dispositivo y este no es el dispositivo, ignorar
-      if (deviceFilter && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
+      // Si hay filtro de dispositivo específico (no "all") y este no es el dispositivo, ignorar
+      if (deviceFilter && deviceFilter !== 'all' && deviceId.toLowerCase() !== deviceFilter.toLowerCase()) {
         return;
       }
       
@@ -307,7 +315,7 @@ export default function SensorChart({
       if (datasetIndex === -1 && deviceReadings.length > 0) {
         const colorIndex = chart.data.datasets.length % colorScheme.length;
         const newDataset = {
-          label: deviceId,
+          label: getDeviceDisplayName(deviceId),
           data: Array(9).fill(null),
           borderColor: colorScheme[colorIndex],
           backgroundColor: `${colorScheme[colorIndex]}1A`,
