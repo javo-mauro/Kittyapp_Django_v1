@@ -191,18 +191,30 @@ class MqttClient {
         
         // Si ha pasado más tiempo que el timeout, marcar como offline
         if (timeSinceLastMsg > this.DEVICE_TIMEOUT_MS) {
-          log(`Device ${deviceId} has been inactive for ${Math.round(timeSinceLastMsg/1000)}s, marking as offline`, 'mqtt');
+          // Verificar si el dispositivo ya está marcado como offline
+          const device = await storage.getDeviceByDeviceId(deviceId);
           
-          // Actualizar el estado en la base de datos
-          await storage.updateDeviceStatus(deviceId, 'offline');
-          
-          // Notificar a los clientes
-          this.broadcastToClients({
-            type: 'device_status_update',
-            deviceId,
-            status: 'offline',
-            timestamp: now.toISOString()
-          });
+          // Solo notificar si el estado va a cambiar de online a offline
+          if (device && device.status === 'online') {
+            log(`Device ${deviceId} has been inactive for ${Math.round(timeSinceLastMsg/1000)}s, marking as offline`, 'mqtt');
+            
+            // Actualizar el estado en la base de datos
+            await storage.updateDeviceStatus(deviceId, 'offline');
+            
+            // Notificar a los clientes del cambio de estado
+            this.broadcastToClients({
+              type: 'device_status_update',
+              deviceId,
+              status: 'offline',
+              previousStatus: 'online',
+              timestamp: now.toISOString()
+            });
+          } else {
+            // Si es null o ya está marcado como offline, solo actualizar la BD sin notificar
+            if (device) {
+              log(`Device ${deviceId} already marked as offline, no need to notify`, 'mqtt');
+            }
+          }
           
           // Eliminar de nuestro seguimiento para no notificar repetidamente
           this.deviceLastSeen.delete(deviceId);
@@ -255,16 +267,34 @@ class MqttClient {
             batteryLevel: 100
           });
         } else {
-          // Si el dispositivo existe, actualizamos su estado
+          // Si el dispositivo existe, verificamos si el estado cambió antes de notificar
+          const currentDevice = await storage.getDeviceByDeviceId(deviceId);
+          
+          // Solo consideramos un cambio de estado si realmente cambia (de online a offline o viceversa)
+          // Notamos además que el cambio debe ser real (no considerar undefined como cambio)
+          const stateChanged = currentDevice?.status !== deviceStatus && 
+                               currentDevice?.status !== undefined && 
+                               deviceStatus !== undefined &&
+                               // Verificar que si ambos son offline u online, no se considere un cambio
+                               !(
+                                 (currentDevice?.status === 'offline' && deviceStatus === 'offline') ||
+                                 (currentDevice?.status === 'online' && deviceStatus === 'online')
+                               );
+          
+          // Actualizar el estado en la base de datos
           await storage.updateDeviceStatus(deviceId, deviceStatus);
           
-          // Notificar a los clientes del cambio de estado
-          this.broadcastToClients({
-            type: 'device_status_update',
-            deviceId,
-            status: deviceStatus,
-            timestamp: new Date().toISOString()
-          });
+          // Notificar a los clientes SOLO si el estado cambió
+          if (stateChanged) {
+            log(`Device ${deviceId} state changed from ${currentDevice?.status} to ${deviceStatus}`, 'mqtt');
+            this.broadcastToClients({
+              type: 'device_status_update',
+              deviceId,
+              status: deviceStatus,
+              previousStatus: currentDevice?.status,
+              timestamp: new Date().toISOString()
+            });
+          }
         }
         
         // Procesar los diferentes tipos de sensores incluidos en el mensaje (humidity, temperature, light, weight)
