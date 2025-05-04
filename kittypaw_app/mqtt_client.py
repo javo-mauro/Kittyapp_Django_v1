@@ -241,8 +241,36 @@ class MqttClient:
         return result.rc == mqtt.MQTT_ERR_SUCCESS
     
     def broadcast_to_clients(self, data):
-        # Esta función será implementada cuando se integre con WebSockets de Django
-        pass
+        """
+        Transmite datos a todos los clientes WebSocket
+        """
+        try:
+            # Importar asíncronamente para evitar problemas de importación circular
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            
+            channel_layer = get_channel_layer()
+            message_type = data.get('type')
+            
+            if message_type == 'sensorData':
+                async_to_sync(channel_layer.group_send)(
+                    'sensor_data_group',
+                    {
+                        'type': 'send_sensor_data',
+                        'data': data.get('data', {})
+                    }
+                )
+            elif message_type == 'deviceStatus':
+                async_to_sync(channel_layer.group_send)(
+                    'sensor_data_group',
+                    {
+                        'type': 'send_device_status',
+                        'deviceId': data.get('deviceId'),
+                        'status': data.get('status')
+                    }
+                )
+        except Exception as e:
+            logger.error(f"Error transmitiendo datos a clientes WebSocket: {str(e)}")
     
     def load_and_connect(self):
         try:

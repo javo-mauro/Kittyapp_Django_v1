@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'channels',
     'kittypaw_app',
 ]
 
@@ -75,6 +76,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'kittypaw_project.wsgi.application'
+ASGI_APPLICATION = 'kittypaw_project.asgi.application'
+
+# Channel layers
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 # Database
