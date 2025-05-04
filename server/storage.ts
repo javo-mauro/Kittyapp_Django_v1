@@ -3,6 +3,8 @@ import {
   devices,
   sensorData,
   mqttConnections,
+  petOwners,
+  pets,
   type User,
   type InsertUser,
   type Device,
@@ -18,6 +20,8 @@ import {
   type Pet,
   type InsertPet
 } from "@shared/schema";
+import { db } from './db';
+import { eq, desc, sql, and, isNull } from 'drizzle-orm';
 
 export interface IStorage {
   // User operations
@@ -515,4 +519,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { DatabaseStorage } from './database-storage';
+
+// Exportamos la implementación de base de datos PostgreSQL
+export const storage = new DatabaseStorage();

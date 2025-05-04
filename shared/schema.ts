@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -124,41 +125,80 @@ export type SystemInfo = {
   lastUpdate: string;
 };
 
-// Definición de tipos para dueños de mascotas y mascotas
-export type PetOwner = {
-  id: number;
-  name: string;
-  paternalLastName: string;
-  maternalLastName: string | null;
-  address: string;
-  birthDate: Date;
-  email: string;
-  username: string; // Nombre de usuario para inicio de sesión
-  password: string; // Contraseña para inicio de sesión
-  createdAt: Date;
-  updatedAt: Date;
-};
+// Definición de tablas para dueños de mascotas y mascotas
+export const petOwners = pgTable("pet_owners", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  paternalLastName: text("paternal_last_name").notNull(),
+  maternalLastName: text("maternal_last_name"),
+  address: text("address").notNull(),
+  birthDate: timestamp("birth_date").notNull(),
+  email: text("email").notNull().unique(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
-export type InsertPetOwner = Omit<PetOwner, "id" | "createdAt" | "updatedAt">;
+export const pets = pgTable("pets", {
+  id: serial("id").primaryKey(),
+  ownerId: integer("owner_id").notNull().references(() => petOwners.id),
+  name: text("name").notNull(),
+  chipNumber: text("chip_number").notNull().unique(),
+  breed: text("breed").notNull(),
+  species: text("species").notNull(),
+  acquisitionDate: timestamp("acquisition_date").notNull(),
+  birthDate: timestamp("birth_date"),
+  origin: text("origin").notNull(),
+  background: text("background"),
+  hasVaccinations: boolean("has_vaccinations").notNull(),
+  hasDiseases: boolean("has_diseases").notNull(),
+  diseaseNotes: text("disease_notes"),
+  lastVetVisit: timestamp("last_vet_visit"),
+  kittyPawDeviceId: text("kitty_paw_device_id").references(() => devices.deviceId),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
-export type Pet = {
-  id: number;
-  ownerId: number;
-  name: string;
-  chipNumber: string;
-  breed: string;
-  species: string;
-  acquisitionDate: Date;
-  birthDate: Date | null;
-  origin: string; // compra, adoptado, etc
-  background: string | null; // bueno, malo, de la calle
-  hasVaccinations: boolean;
-  hasDiseases: boolean;
-  diseaseNotes: string | null;
-  lastVetVisit: Date | null;
-  kittyPawDeviceId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
+// Esquemas de inserción para dueños de mascotas y mascotas
+export const insertPetOwnerSchema = createInsertSchema(petOwners).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
-export type InsertPet = Omit<Pet, "id" | "createdAt" | "updatedAt">;
+export const insertPetSchema = createInsertSchema(pets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Definir los tipos para mascotas y dueños
+export type InsertPetOwner = z.infer<typeof insertPetOwnerSchema>;
+export type PetOwner = typeof petOwners.$inferSelect;
+
+export type InsertPet = z.infer<typeof insertPetSchema>;
+export type Pet = typeof pets.$inferSelect;
+
+// Relaciones
+export const petOwnersRelations = relations(petOwners, ({ many }) => ({
+  pets: many(pets),
+}));
+
+export const petsRelations = relations(pets, ({ one }) => ({
+  owner: one(petOwners, {
+    fields: [pets.ownerId],
+    references: [petOwners.id],
+  }),
+  device: one(devices, {
+    fields: [pets.kittyPawDeviceId],
+    references: [devices.deviceId],
+  }),
+}));
+
+export const devicesRelations = relations(devices, ({ one }) => ({
+  pet: one(pets, {
+    fields: [devices.deviceId],
+    references: [pets.kittyPawDeviceId],
+  }),
+}));
