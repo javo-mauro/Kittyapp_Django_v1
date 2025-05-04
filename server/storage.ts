@@ -243,6 +243,7 @@ export class MemStorage implements IStorage {
   async updateDeviceStatus(deviceId: string, status: string): Promise<void> {
     const device = await this.getDeviceByDeviceId(deviceId);
     if (device) {
+      console.log(`Updating device ${deviceId} status from ${device.status} to ${status}`);
       device.status = status;
       device.lastUpdate = new Date();
       this.devices.set(device.id, device);
@@ -279,8 +280,14 @@ export class MemStorage implements IStorage {
     const data: SensorData = { ...insertData, id, timestamp: now };
     this.sensorData.push(data);
     
-    // Update device last update time and status
-    await this.updateDeviceStatus(insertData.deviceId, "online");
+    // No actualizamos automáticamente el estado a "online" ya que esto puede anular
+    // los cambios de estado explícitos que se envían en los mensajes MQTT
+    // Sólo actualizamos el timestamp
+    const device = await this.getDeviceByDeviceId(insertData.deviceId);
+    if (device) {
+      device.lastUpdate = now;
+      this.devices.set(device.id, device);
+    }
     
     return data;
   }

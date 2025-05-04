@@ -281,21 +281,31 @@ class MqttClient {
             log(`Potential status change for ${deviceId}: ${currentDevice.status} -> ${deviceStatus}. Will notify: ${stateChanged}`, 'mqtt');
           }
           
+          // Guardar el estado anterior para comparar después de la actualización
+          const previousStatus = currentDevice ? currentDevice.status : null;
+          
           // Actualizar el estado en la base de datos
           await storage.updateDeviceStatus(deviceId, deviceStatus);
           
-          // Notificar a los clientes SOLO si el estado cambió
-          if (stateChanged) {
-            log(`Device ${deviceId} state changed from ${currentDevice.status} to ${deviceStatus}`, 'mqtt');
-            this.broadcastToClients({
-              type: 'device_status_update',
-              deviceId,
-              status: deviceStatus,
-              previousStatus: currentDevice.status,
-              timestamp: new Date().toISOString()
-            });
-          } else {
-            // No registramos nada para evitar contaminar los logs
+          // Obtenemos el dispositivo actualizado para verificar que el cambio se haya aplicado
+          const updatedDevice = await storage.getDeviceByDeviceId(deviceId);
+          
+          // Verificar que el cambio se aplicó correctamente
+          if (updatedDevice && updatedDevice.status !== previousStatus) {
+            log(`Device ${deviceId} state updated from ${previousStatus} to ${updatedDevice.status}`, 'mqtt');
+            
+            // Notificar a los clientes SOLO si el estado cambió
+            if (stateChanged) {
+              this.broadcastToClients({
+                type: 'device_status_update',
+                deviceId,
+                status: deviceStatus,
+                previousStatus: previousStatus,
+                timestamp: new Date().toISOString()
+              });
+            }
+          } else if (updatedDevice) {
+            log(`Warning: Failed to update device ${deviceId} status from ${previousStatus} to ${deviceStatus}. Current status: ${updatedDevice.status}`, 'mqtt');
           }
         }
         
