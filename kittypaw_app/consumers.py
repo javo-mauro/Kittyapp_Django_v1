@@ -16,14 +16,24 @@ class SensorDataConsumer(AsyncWebsocketConsumer):
         await self.accept()
         logger.info(f"Cliente WebSocket conectado: {self.channel_name}")
         
-        # Registro en el cliente MQTT
-        # Nota: esto debe hacerse de forma asíncrona para no bloquear
+        # Unirse al grupo para difusión de datos
+        await self.channel_layer.group_add(
+            'sensor_data_group',
+            self.channel_name
+        )
+        
+        # Enviar datos iniciales al cliente
         await self.send_initial_data()
     
     async def disconnect(self, close_code):
         """
         Cliente se desconecta del WebSocket
         """
+        # Salir del grupo
+        await self.channel_layer.group_discard(
+            'sensor_data_group',
+            self.channel_name
+        )
         logger.info(f"Cliente WebSocket desconectado: {self.channel_name}")
     
     async def receive(self, text_data):
