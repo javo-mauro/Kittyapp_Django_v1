@@ -12,10 +12,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-import environ
-
-# Inicializar environ
-env = environ.Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -153,3 +149,6 @@ REST_FRAMEWORK = {
 
 # Session cookie settings
 SESSION_COOKIE_AGE = 86400  # 1 día en segundos
+
+# Custom user model
+AUTH_USER_MODEL = 'kittypaw_app.User'
