@@ -9,6 +9,11 @@ class MqttClient {
   private connectionId: number | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private webSockets: Set<WebSocket> = new Set();
+  
+  // Sistema de detección de dispositivos inactivos
+  private deviceLastSeen: Map<string, Date> = new Map(); // Registro de último ping de dispositivos
+  private offlineCheckTimer: NodeJS.Timeout | null = null;
+  private readonly DEVICE_TIMEOUT_MS = 30000; // 30 segundos sin datos = dispositivo offline
 
   async connect(
     brokerUrl: string, 
@@ -97,6 +102,15 @@ class MqttClient {
 
   async disconnect() {
     return new Promise<void>((resolve) => {
+      // Limpiar el timer de detección de dispositivos offline
+      if (this.offlineCheckTimer) {
+        clearInterval(this.offlineCheckTimer);
+        this.offlineCheckTimer = null;
+      }
+      
+      // Limpiar lastSeen de dispositivos
+      this.deviceLastSeen.clear();
+      
       if (!this.client) {
         resolve();
         return;
@@ -154,6 +168,46 @@ class MqttClient {
     }
   }
 
+  // Método para comprobar dispositivos inactivos
+  private startOfflineCheckTimer() {
+    // Cancelar si ya hay un timer funcionando
+    if (this.offlineCheckTimer) {
+      clearInterval(this.offlineCheckTimer);
+    }
+    
+    // Configurar un intervalo para verificar dispositivos inactivos cada 10 segundos
+    this.offlineCheckTimer = setInterval(async () => {
+      const now = new Date();
+      
+      // Verificar todos los dispositivos que hemos registrado
+      for (const deviceId of this.deviceLastSeen.keys()) {
+        const lastSeen = this.deviceLastSeen.get(deviceId)!;
+        const timeSinceLastMsg = now.getTime() - lastSeen.getTime();
+        
+        // Si ha pasado más tiempo que el timeout, marcar como offline
+        if (timeSinceLastMsg > this.DEVICE_TIMEOUT_MS) {
+          log(`Device ${deviceId} has been inactive for ${timeSinceLastMsg/1000}s, marking as offline`, 'mqtt');
+          
+          // Actualizar el estado en la base de datos
+          await storage.updateDeviceStatus(deviceId, 'offline');
+          
+          // Notificar a los clientes
+          this.broadcastToClients({
+            type: 'device_status_update',
+            deviceId,
+            status: 'offline',
+            timestamp: now.toISOString()
+          });
+          
+          // Eliminar de nuestro seguimiento para no notificar repetidamente
+          this.deviceLastSeen.delete(deviceId);
+        }
+      }
+    }, 10000); // Revisar cada 10 segundos
+    
+    log('Started offline detection timer', 'mqtt');
+  }
+
   private async handleMessage(topic: string, messageBuffer: Buffer) {
     try {
       const message = messageBuffer.toString();
@@ -170,6 +224,14 @@ class MqttClient {
         if (!deviceId) {
           log(`Invalid KPCL0021 message format, missing device_id: ${message}`, 'mqtt');
           return;
+        }
+        
+        // Actualizar el lastSeen del dispositivo
+        this.deviceLastSeen.set(deviceId, new Date());
+        
+        // Asegurarse de que el timer está funcionando
+        if (!this.offlineCheckTimer) {
+          this.startOfflineCheckTimer();
         }
         
         // Check if device exists, if not create it
