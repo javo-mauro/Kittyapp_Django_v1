@@ -274,7 +274,7 @@ async function insertInitialData(): Promise<void> {
       .from(schema.mqttConnections)
       .where(sql`broker_url = 'mqtt://broker.emqx.io:1883'`);
     
-    if ((!mqttExists[0] || mqttExists[0]?.count === 0) && adminId > 0) {
+    if ((!mqttExists[0] || Number(mqttExists[0]?.count) === 0) && adminId > 0) {
       await db.insert(schema.mqttConnections).values({
         userId: adminId,
         brokerUrl: "mqtt://broker.emqx.io:1883",
