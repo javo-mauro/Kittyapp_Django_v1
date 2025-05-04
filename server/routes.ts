@@ -641,11 +641,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: status // Usar el status pasado como parámetro (o 'online' por defecto)
           };
           
-          const kpcMessage = JSON.stringify(kpcData);
-          
           // Publicar mensaje directamente al tópico MQTT
-          mqttClient.client.publish(`${currentDeviceId}/pub`, kpcMessage);
-          log(`Published test message to ${currentDeviceId}/pub: ${kpcMessage}`, 'express');
+          mqttClient.publish(`${currentDeviceId}/pub`, kpcData);
           
           allGeneratedData.push({
             deviceId: currentDeviceId,

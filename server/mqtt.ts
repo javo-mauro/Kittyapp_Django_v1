@@ -179,14 +179,19 @@ class MqttClient {
     this.offlineCheckTimer = setInterval(async () => {
       const now = new Date();
       
-      // Verificar todos los dispositivos que hemos registrado
-      for (const deviceId of this.deviceLastSeen.keys()) {
-        const lastSeen = this.deviceLastSeen.get(deviceId)!;
+      // Verificar todos los dispositivos que hemos registrado - usando Array.from para evitar problemas de iteración
+      const deviceIds = Array.from(this.deviceLastSeen.keys());
+      
+      // Por cada dispositivo registrado, verificar si ha pasado demasiado tiempo sin actividad
+      for (const deviceId of deviceIds) {
+        const lastSeen = this.deviceLastSeen.get(deviceId);
+        if (!lastSeen) continue;
+        
         const timeSinceLastMsg = now.getTime() - lastSeen.getTime();
         
         // Si ha pasado más tiempo que el timeout, marcar como offline
         if (timeSinceLastMsg > this.DEVICE_TIMEOUT_MS) {
-          log(`Device ${deviceId} has been inactive for ${timeSinceLastMsg/1000}s, marking as offline`, 'mqtt');
+          log(`Device ${deviceId} has been inactive for ${Math.round(timeSinceLastMsg/1000)}s, marking as offline`, 'mqtt');
           
           // Actualizar el estado en la base de datos
           await storage.updateDeviceStatus(deviceId, 'offline');
@@ -460,8 +465,43 @@ class MqttClient {
   }
 
   // Generate some random sensor data for testing (when real data isn't available)
-  async generateRandomData() {
+  // Método público para publicar un mensaje MQTT
+  publish(topic: string, message: string | object): boolean {
     if (!this.client || !this.client.connected) {
+      log(`Cannot publish: MQTT client not connected`, 'mqtt');
+      return false;
+    }
+    
+    // Si el mensaje es un objeto, convertirlo a string
+    const messageStr = typeof message === 'object' ? JSON.stringify(message) : message;
+    
+    // Asegurar que el tópico tenga el formato correcto
+    const formattedTopic = topic.includes('/') ? topic : `${topic}/pub`;
+    
+    this.client.publish(formattedTopic, messageStr);
+    log(`Published message to ${formattedTopic}: ${messageStr}`, 'mqtt');
+    
+    // Si el mensaje contiene un device_id y un status, actualizar el timestamp de lastSeen
+    try {
+      if (typeof message === 'string') {
+        const parsedMsg = JSON.parse(message);
+        if (parsedMsg.device_id) {
+          // Actualizar lastSeen para este dispositivo
+          this.deviceLastSeen.set(parsedMsg.device_id, new Date());
+        }
+      } else if (typeof message === 'object' && (message as any).device_id) {
+        // Actualizar lastSeen para este dispositivo
+        this.deviceLastSeen.set((message as any).device_id, new Date());
+      }
+    } catch (error) {
+      // Ignorar errores de parsing
+    }
+    
+    return true;
+  }
+  
+  async generateRandomData() {
+    if (!this.isConnected()) {
       return;
     }
     
@@ -476,12 +516,7 @@ class MqttClient {
       status: "online" // Añadimos el campo status como online
     };
     
-    const kpcMessage1 = JSON.stringify(kpcData1);
-    
-    if (this.client && this.client.connected) {
-      this.client.publish('KPCL0021/pub', kpcMessage1);
-      log(`Published test message to KPCL0021/pub: ${kpcMessage1}`, 'mqtt');
-    }
+    this.publish('KPCL0021/pub', kpcData1);
     
     // Generar datos para KPCL0022
     const kpcData2 = {
@@ -494,12 +529,7 @@ class MqttClient {
       status: "online" // Añadimos el campo status como online
     };
     
-    const kpcMessage2 = JSON.stringify(kpcData2);
-    
-    if (this.client && this.client.connected) {
-      this.client.publish('KPCL0022/pub', kpcMessage2);
-      log(`Published test message to KPCL0022/pub: ${kpcMessage2}`, 'mqtt');
-    }
+    this.publish('KPCL0022/pub', kpcData2);
   }
 }
 
