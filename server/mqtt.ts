@@ -13,7 +13,7 @@ class MqttClient {
   // Sistema de detección de dispositivos inactivos
   private deviceLastSeen: Map<string, Date> = new Map(); // Registro de último ping de dispositivos
   private offlineCheckTimer: NodeJS.Timeout | null = null;
-  private readonly DEVICE_TIMEOUT_MS = 30000; // 30 segundos sin datos = dispositivo offline
+  private readonly DEVICE_TIMEOUT_MS = 15000; // 15 segundos sin datos = dispositivo offline
 
   async connect(
     brokerUrl: string, 
@@ -498,6 +498,28 @@ class MqttClient {
           batteryLevel: 85
         });
       }
+      
+      // Iniciar el temporizador de detección de dispositivos inactivos
+      this.startOfflineCheckTimer();
+      
+      // Registrar ambos dispositivos para el monitoreo de actividad
+      // Usamos el doble del intervalo para asegurar que se marque como offline si no recibe datos
+      const now = new Date();
+      
+      // Registramos KPCL0021 con un timestamp antiguo para que se marque como offline
+      // si no recibimos datos pronto
+      this.deviceLastSeen.set('KPCL0021', new Date(now.getTime() - this.DEVICE_TIMEOUT_MS - 1000));
+      
+      // Para KPCL0022, lo ponemos como "recién visto" para darle tiempo a recibir datos
+      this.deviceLastSeen.set('KPCL0022', now);
+      
+      // Realizar una verificación inmediata (después de un breve retardo)
+      setTimeout(() => {
+        if (this.offlineCheckTimer) {
+          clearInterval(this.offlineCheckTimer);
+        }
+        this.startOfflineCheckTimer();
+      }, 5000); // 5 segundos de retraso
       
       return true;
     } catch (error) {
