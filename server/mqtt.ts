@@ -410,7 +410,8 @@ class MqttClient {
       humidity: Math.random() * 30 + 40, // 40-70%
       temperature: Math.random() * 10 + 20, // 20-30°C
       light: Math.random() * 1000 + 200, // 200-1200 lux
-      weight: Math.floor(Math.random() * 500) + 100 // 100-600g
+      weight: Math.floor(Math.random() * 500) + 100, // 100-600g
+      status: "online" // Añadimos el campo status como online
     };
     
     const kpcMessage1 = JSON.stringify(kpcData1);
@@ -427,7 +428,8 @@ class MqttClient {
       humidity: Math.random() * 30 + 40, // 40-70%
       temperature: Math.random() * 10 + 20, // 20-30°C
       light: Math.random() * 1000 + 200, // 200-1200 lux
-      weight: Math.floor(Math.random() * 500) + 100 // 100-600g
+      weight: Math.floor(Math.random() * 500) + 100, // 100-600g
+      status: "online" // Añadimos el campo status como online
     };
     
     const kpcMessage2 = JSON.stringify(kpcData2);

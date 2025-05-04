@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const getDeviceDisplayName = (deviceId: string): string => {
   const deviceMap: Record<string, string> = {
     'KPCL0021': 'Collar Malto',
-    'KPCL0022': 'Collar Luna',
+    'KPCL0022': 'Placa de Canela',
   };
   
   return deviceMap[deviceId] || deviceId;

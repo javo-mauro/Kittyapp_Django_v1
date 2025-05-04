@@ -137,6 +137,39 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           return [...filteredReadings, newReading];
         });
         break;
+        
+      case 'device_status_update':
+        // Actualizar el estado de un dispositivo específico
+        setDevices(prevDevices => {
+          return prevDevices.map(device => {
+            if (device.deviceId === message.deviceId) {
+              // Actualizar el dispositivo con el nuevo estado
+              return {
+                ...device,
+                status: message.status,
+                lastUpdate: message.timestamp
+              };
+            }
+            return device;
+          });
+        });
+        
+        // Mostrar notificación si el dispositivo cambia a offline
+        if (message.status === 'offline') {
+          toast({
+            title: `¡Dispositivo desconectado!`,
+            description: `El dispositivo ${message.deviceId} está ahora desconectado.`,
+            variant: 'destructive',
+          });
+        } else if (message.status === 'online') {
+          // Notificación opcional cuando el dispositivo vuelve a estar online
+          toast({
+            title: `Dispositivo conectado`,
+            description: `El dispositivo ${message.deviceId} está ahora en línea.`,
+            variant: 'default',
+          });
+        }
+        break;
       
       default:
         console.log('Unknown message type:', message.type);
