@@ -171,40 +171,53 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMqttConnectionStatus(id: number, connected: boolean): Promise<void> {
+    const updateData: any = { connected };
+    
+    if (connected) {
+      updateData.lastConnected = new Date();
+    }
+    
     await db.update(mqttConnections)
-      .set({ 
-        connected,
-        lastConnected: connected ? new Date() : undefined
-      })
+      .set(updateData)
       .where(eq(mqttConnections.id, id));
   }
 
   // System operations
   async getSystemMetrics(): Promise<SystemMetrics> {
-    // Contar dispositivos activos (con estado "online")
-    const activeDevicesResult = await db.select({
-      count: sql<number>`count(*)`,
-    })
-    .from(devices)
-    .where(eq(devices.status, 'online'));
-    
-    // Contar sensores activos (distintos sensores en los últimos 15 minutos)
-    const activeSensorsQuery = `
-      SELECT COUNT(DISTINCT sensor_type) as count
-      FROM sensor_data
-      WHERE timestamp > NOW() - INTERVAL '15 minutes'
-    `;
-    const activeSensorsResult = await db.execute(sql.raw(activeSensorsQuery));
-    
-    // Contar alertas (por implementar, por ahora devuelve 0)
-    const alertsCount = 0;
-    
-    return {
-      activeDevices: activeDevicesResult[0]?.count || 0,
-      activeSensors: parseInt(activeSensorsResult.rows[0]?.count || '0'),
-      alerts: alertsCount,
-      lastUpdate: new Date().toISOString()
-    };
+    try {
+      // Contar dispositivos activos (con estado "online")
+      const activeDevicesResult = await db.select({
+        count: sql<number>`count(*)`,
+      })
+      .from(devices)
+      .where(eq(devices.status, 'online'));
+      
+      // Contar sensores activos (distintos sensores en los últimos 15 minutos)
+      const activeSensorsQuery = `
+        SELECT COUNT(DISTINCT sensor_type) as count
+        FROM sensor_data
+        WHERE timestamp > NOW() - INTERVAL '15 minutes'
+      `;
+      const activeSensorsResult = await db.execute(sql.raw(activeSensorsQuery));
+      
+      // Contar alertas (por implementar, por ahora devuelve 0)
+      const alertsCount = 0;
+      
+      return {
+        activeDevices: activeDevicesResult[0]?.count || 0,
+        activeSensors: parseInt(activeSensorsResult.rows[0]?.count?.toString() || '0'),
+        alerts: alertsCount,
+        lastUpdate: new Date().toISOString()
+      };
+    } catch (error) {
+      // En caso de error con la base de datos, devolver valores predeterminados
+      return {
+        activeDevices: 0,
+        activeSensors: 0,
+        alerts: 0,
+        lastUpdate: new Date().toISOString()
+      };
+    }
   }
   
   // Pet owner operations
