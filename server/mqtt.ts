@@ -273,20 +273,25 @@ class MqttClient {
           
           // Solo consideramos un cambio de estado real entre valores diferentes
           // Hay dos posibles cambios reales: de online a offline o de offline a online
-          const stateChanged = (currentDevice?.status === 'online' && deviceStatus === 'offline') ||
-                               (currentDevice?.status === 'offline' && deviceStatus === 'online');
+          const stateChanged = (currentDevice && currentDevice.status === 'online' && deviceStatus === 'offline') ||
+                               (currentDevice && currentDevice.status === 'offline' && deviceStatus === 'online');
+          
+          // Debug logs solo para nosotros
+          if (currentDevice && currentDevice.status !== deviceStatus) {
+            log(`Potential status change for ${deviceId}: ${currentDevice.status} -> ${deviceStatus}. Will notify: ${stateChanged}`, 'mqtt');
+          }
           
           // Actualizar el estado en la base de datos
           await storage.updateDeviceStatus(deviceId, deviceStatus);
           
           // Notificar a los clientes SOLO si el estado cambió
           if (stateChanged) {
-            log(`Device ${deviceId} state changed from ${currentDevice?.status} to ${deviceStatus}`, 'mqtt');
+            log(`Device ${deviceId} state changed from ${currentDevice.status} to ${deviceStatus}`, 'mqtt');
             this.broadcastToClients({
               type: 'device_status_update',
               deviceId,
               status: deviceStatus,
-              previousStatus: currentDevice?.status,
+              previousStatus: currentDevice.status,
               timestamp: new Date().toISOString()
             });
           } else {
