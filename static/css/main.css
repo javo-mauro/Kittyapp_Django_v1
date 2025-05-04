@@ -1,100 +1,103 @@
-/* Estilos personalizados para KittyPawSensors */
+/* KittyPawSensors - Estilos principales */
 
 :root {
-  --primary-color: #3498db;
-  --secondary-color: #2ecc71;
-  --accent-color: #f39c12;
-  --background-color: #f8f9fa;
-  --text-color: #333;
-  --border-radius: 8px;
+  --primary-color: #FF5F6D;
+  --secondary-color: #FFC371;
+  --background-color: #FFFFFF;
+  --text-color: #333333;
+  --light-bg: #F5F5F5;
+  --border-color: #DDDDDD;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --info-color: #17a2b8;
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--background-color);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: var(--text-color);
-  line-height: 1.6;
+  background-color: var(--background-color);
+  margin: 0;
+  padding: 0;
 }
 
-/* Navbar y encabezados */
-.navbar {
+.navbar-brand img {
+  height: 40px;
+}
+
+.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.btn-primary {
   background-color: var(--primary-color);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-color);
 }
 
-.navbar-brand {
-  font-weight: bold;
-  color: white !important;
+.btn-primary:hover {
+  background-color: #ff4557;
+  border-color: #ff4557;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  margin-bottom: 1rem;
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
-/* Tarjetas y contenedores */
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
 .card {
-  border-radius: var(--border-radius);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 10px;
   transition: transform 0.3s ease;
-  margin-bottom: 1.5rem;
 }
 
 .card:hover {
   transform: translateY(-5px);
 }
 
-.card-header {
-  background-color: rgba(0, 0, 0, 0.03);
-  font-weight: 600;
+.device-status-online {
+  color: var(--success-color);
 }
 
-/* Botones */
-.btn-primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+.device-status-offline {
+  color: var(--danger-color);
 }
 
-.btn-secondary {
-  background-color: var(--secondary-color);
-  border-color: var(--secondary-color);
+.device-status-warning {
+  color: var(--warning-color);
 }
 
-.btn {
-  border-radius: var(--border-radius);
-}
-
-/* Indicadores de estado */
-.status-badge {
-  padding: 5px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.status-online {
-  background-color: var(--secondary-color);
-  color: white;
-}
-
-.status-offline {
-  background-color: #e74c3c;
-  color: white;
-}
-
-/* Gráficos */
 .chart-container {
   height: 300px;
-  margin-bottom: 2rem;
+  margin-bottom: 20px;
 }
 
-/* Responsive */
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+/* Estilos para pantallas pequeñas */
 @media (max-width: 768px) {
-  .card {
-    margin-bottom: 1rem;
-  }
-  
   .chart-container {
     height: 200px;
+  }
+  
+  .card {
+    margin-bottom: 20px;
   }
 }

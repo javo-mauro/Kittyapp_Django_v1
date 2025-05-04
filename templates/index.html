@@ -1,30 +1,184 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KittyPawSensors</title>
-    <!-- Estilos CSS de Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Iconos -->
-    <link href="https://cdn.jsdelivr.net/npm/lucide-icons@latest/dist/umd/lucide-icons.css" rel="stylesheet">
-    <!-- Estilos propios -->
-    <link href="/static/css/main.css" rel="stylesheet">
-</head>
-<body>
-    <div id="root">
-        <!-- React montará aquí la aplicación -->
-        <div class="container mt-5 text-center">
-            <h2>Cargando KittyPawSensors...</h2>
-            <div class="spinner-border mt-3" role="status">
-                <span class="visually-hidden">Cargando...</span>
+{% extends "base.html" %}
+
+{% block title %}KittyPawSensors - Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Dashboard</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <select id="deviceSelector" class="form-select d-inline-block w-auto">
+            <option value="all">Todos los dispositivos</option>
+        </select>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Dispositivos Activos</h5>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <h2 class="display-4 mb-0" id="activeDevicesCount">0</h2>
+                    <i class="bi bi-hdd-rack text-primary" style="font-size: 2.5rem;"></i>
+                </div>
             </div>
         </div>
     </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Sensores Activos</h5>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <h2 class="display-4 mb-0" id="activeSensorsCount">0</h2>
+                    <i class="bi bi-thermometer-half text-primary" style="font-size: 2.5rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Alertas</h5>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <h2 class="display-4 mb-0" id="alertsCount">0</h2>
+                    <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2.5rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Última actualización</h5>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <p class="mb-0" id="lastUpdateTime">-</p>
+                    <i class="bi bi-clock-history text-primary" style="font-size: 2.5rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Scripts de Bootstrap -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Script principal de React -->
-    <script src="/static/js/main.js"></script>
-</body>
-</html>
+<div class="row mb-4">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Detalles del Dispositivo</h5>
+            </div>
+            <div class="card-body" id="deviceDetails">
+                <h3>Todos los dispositivos</h3>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Dispositivos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="devicesList">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-3">Cargando dispositivos...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Temperatura</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Humedad</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="humidityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Luz</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="lightChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Peso</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Actualizar contadores
+    document.addEventListener('DOMContentLoaded', function() {
+        // Función para actualizar los contadores
+        function updateCounters() {
+            // Contar dispositivos activos
+            const activeDevices = devices.filter(d => d.status === 'online').length;
+            document.getElementById('activeDevicesCount').textContent = activeDevices;
+            
+            // Contar sensores activos (simplificado)
+            const activeSensors = activeDevices * 4; // 4 sensores por dispositivo
+            document.getElementById('activeSensorsCount').textContent = activeSensors;
+            
+            // Última actualización
+            document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString();
+        }
+        
+        // Actualizar cada 10 segundos
+        setInterval(updateCounters, 10000);
+        
+        // También actualizar cuando cambian los datos de dispositivos
+        const originalUpdateDeviceList = window.updateDeviceList;
+        window.updateDeviceList = function() {
+            originalUpdateDeviceList.apply(this, arguments);
+            updateCounters();
+        };
+    });
+</script>
+{% endblock %}

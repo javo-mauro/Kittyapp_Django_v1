@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}KittyPawSensors - Mascotas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Mascotas</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <div class="input-group w-50 float-end">
+            <input type="text" class="form-control" id="petSearch" placeholder="Buscar mascota...">
+            <button class="btn btn-outline-primary" type="button">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4" id="petsList">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-3">Cargando mascotas...</p>
+    </div>
+</div>
+
+<div class="modal fade" id="petDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Detalles de la Mascota</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="petModalContent">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 id="modalPetName"></h4>
+                        <p><strong>Chip:</strong> <span id="modalPetChip"></span></p>
+                        <p><strong>Especie:</strong> <span id="modalPetSpecies"></span></p>
+                        <p><strong>Raza:</strong> <span id="modalPetBreed"></span></p>
+                        <p><strong>Vacunación:</strong> <span id="modalPetVaccinations"></span></p>
+                        <p><strong>Enfermedades:</strong> <span id="modalPetDiseases"></span></p>
+                        <p><strong>Última visita al veterinario:</strong> <span id="modalPetVetVisit"></span></p>
+                        
+                        <h5 class="mt-4">Propietario</h5>
+                        <div id="modalOwnerInfo">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <span class="ms-2">Cargando información...</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Dispositivo KittyPaw</h5>
+                        <div id="modalDeviceInfo">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <span class="ms-2">Cargando información...</span>
+                        </div>
+                        
+                        <h5 class="mt-4">Historial</h5>
+                        <ul class="list-group" id="modalPetHistory">
+                            <li class="list-group-item text-center text-muted">
+                                No hay datos de historial disponibles
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="viewPetDataBtn">Ver datos completos</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar la lista de mascotas
+    loadPets();
+    
+    // Configurar búsqueda
+    const searchInput = document.getElementById('petSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const petCards = document.querySelectorAll('.pet-card');
+            
+            petCards.forEach(card => {
+                const petName = card.querySelector('.card-title').textContent.toLowerCase();
+                const petChip = card.querySelector('.pet-chip').textContent.toLowerCase();
+                const petBreed = card.querySelector('.pet-breed').textContent.toLowerCase();
+                
+                if (petName.includes(searchTerm) || petChip.includes(searchTerm) || petBreed.includes(searchTerm)) {
+                    card.closest('.col-md-4').style.display = '';
+                } else {
+                    card.closest('.col-md-4').style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Función para cargar la lista de mascotas
+    function loadPets() {
+        const petsList = document.getElementById('petsList');
+        if (!petsList) return;
+        
+        fetch('/api/pets/')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error cargando mascotas');
+                }
+                return response.json();
+            })
+            .then(pets => {
+                // Limpiar la lista
+                petsList.innerHTML = '';
+                
+                // Si no hay mascotas
+                if (!pets || pets.length === 0) {
+                    petsList.innerHTML = `
+                        <div class="col-12 text-center py-5">
+                            <i class="bi bi-emoji-frown text-muted" style="font-size: 3rem;"></i>
+                            <p class="mt-3">No se encontraron mascotas</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Agregar cada mascota
+                pets.forEach(pet => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 mb-4';
+                    
+                    // Determinar icono para la especie
+                    let speciesIcon = 'bi-question-circle';
+                    if (pet.species.toLowerCase().includes('perro')) {
+                        speciesIcon = 'bi-emoji-smile';
+                    } else if (pet.species.toLowerCase().includes('gato')) {
+                        speciesIcon = 'bi-emoji-smile-upside-down';
+                    }
+                    
+                    col.innerHTML = `
+                        <div class="card h-100 pet-card">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">${pet.name}</h5>
+                                <i class="bi ${speciesIcon}" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">
+                                    <strong>Chip:</strong> <span class="pet-chip">${pet.chip_number}</span>
+                                </p>
+                                <p class="card-text">
+                                    <strong>Especie:</strong> ${pet.species}
+                                </p>
+                                <p class="card-text">
+                                    <strong>Raza:</strong> <span class="pet-breed">${pet.breed}</span>
+                                </p>
+                                <p class="card-text">
+                                    <strong>Propietario:</strong> ${pet.owner_name}
+                                </p>
+                                
+                                <div class="mb-2">
+                                    <span class="badge ${pet.has_vaccinations ? 'bg-success' : 'bg-danger'}">
+                                        ${pet.has_vaccinations ? 'Vacunado' : 'No vacunado'}
+                                    </span>
+                                    
+                                    <span class="badge ${pet.has_diseases ? 'bg-danger' : 'bg-success'}">
+                                        ${pet.has_diseases ? 'Con enfermedades' : 'Saludable'}
+                                    </span>
+                                    
+                                    <span class="badge ${pet.kitty_paw_device ? 'bg-primary' : 'bg-secondary'}">
+                                        ${pet.kitty_paw_device ? 'Dispositivo conectado' : 'Sin dispositivo'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-primary w-100" onclick="showPetDetails(${pet.id})">
+                                    <i class="bi bi-info-circle"></i> Ver detalles
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    petsList.appendChild(col);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                petsList.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                        <p class="mt-3">Error cargando mascotas: ${error.message}</p>
+                    </div>
+                `;
+            });
+    }
+    
+    // Mostrar modal con detalles de la mascota
+    window.showPetDetails = function(petId) {
+        const petDetailModal = new bootstrap.Modal(document.getElementById('petDetailModal'));
+        
+        // Cargar detalles de la mascota
+        fetch(`/api/pets/${petId}/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error cargando detalles de la mascota');
+                }
+                return response.json();
+            })
+            .then(pet => {
+                // Actualizar información básica
+                document.getElementById('modalPetName').textContent = pet.name;
+                document.getElementById('modalPetChip').textContent = pet.chip_number;
+                document.getElementById('modalPetSpecies').textContent = pet.species;
+                document.getElementById('modalPetBreed').textContent = pet.breed;
+                
+                // Vacunación
+                const vaccinationsElem = document.getElementById('modalPetVaccinations');
+                vaccinationsElem.textContent = pet.has_vaccinations ? 'Sí' : 'No';
+                vaccinationsElem.className = pet.has_vaccinations ? 'text-success' : 'text-danger';
+                
+                // Enfermedades
+                const diseasesElem = document.getElementById('modalPetDiseases');
+                if (pet.has_diseases) {
+                    diseasesElem.textContent = 'Sí';
+                    diseasesElem.className = 'text-danger';
+                    if (pet.disease_notes) {
+                        diseasesElem.textContent += ` (${pet.disease_notes})`;
+                    }
+                } else {
+                    diseasesElem.textContent = 'No';
+                    diseasesElem.className = 'text-success';
+                }
+                
+                // Última visita al veterinario
+                document.getElementById('modalPetVetVisit').textContent = 
+                    pet.last_vet_visit ? new Date(pet.last_vet_visit).toLocaleDateString() : 'No registrada';
+                
+                // Cargar información del propietario
+                const ownerInfoElem = document.getElementById('modalOwnerInfo');
+                fetch(`/api/pet-owners/${pet.owner}/`)
+                    .then(response => response.json())
+                    .then(owner => {
+                        ownerInfoElem.innerHTML = `
+                            <p><strong>Nombre:</strong> ${owner.name} ${owner.paternal_last_name} ${owner.maternal_last_name || ''}</p>
+                            <p><strong>Email:</strong> ${owner.email}</p>
+                            <p><strong>Dirección:</strong> ${owner.address}</p>
+                        `;
+                    })
+                    .catch(error => {
+                        ownerInfoElem.innerHTML = '<p class="text-danger">Error cargando información del propietario</p>';
+                    });
+                
+                // Cargar información del dispositivo
+                const deviceInfoElem = document.getElementById('modalDeviceInfo');
+                if (pet.kitty_paw_device) {
+                    fetch(`/api/devices/${pet.kitty_paw_device}/`)
+                        .then(response => response.json())
+                        .then(device => {
+                            deviceInfoElem.innerHTML = `
+                                <p><strong>Nombre:</strong> ${device.name || device.device_id}</p>
+                                <p><strong>ID:</strong> ${device.device_id}</p>
+                                <p><strong>Estado:</strong> <span class="device-status-${(device.status || 'unknown').toLowerCase()}">${device.status || 'Desconocido'}</span></p>
+                                <p><strong>Batería:</strong> ${device.battery_level || 0}%</p>
+                                <button class="btn btn-sm btn-primary mt-2" onclick="window.location.href='/devices/${device.device_id}/'">
+                                    Ver datos del dispositivo
+                                </button>
+                            `;
+                        })
+                        .catch(error => {
+                            deviceInfoElem.innerHTML = '<p class="text-warning">Error cargando información del dispositivo</p>';
+                        });
+                } else {
+                    deviceInfoElem.innerHTML = '<p class="text-muted">No hay dispositivo KittyPaw asociado a esta mascota</p>';
+                }
+                
+                // Configurar botón para ver datos completos
+                document.getElementById('viewPetDataBtn').onclick = function() {
+                    window.location.href = `/pets/${petId}/`;
+                };
+                
+                petDetailModal.show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error cargando detalles de la mascota: ' + error.message);
+            });
+    };
+});
+</script>
+{% endblock %}

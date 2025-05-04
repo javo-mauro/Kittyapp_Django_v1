@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}KittyPawSensors - Dispositivos{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Dispositivos</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <div class="input-group w-50 float-end">
+            <input type="text" class="form-control" id="deviceSearch" placeholder="Buscar dispositivo...">
+            <button class="btn btn-outline-primary" type="button">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4" id="devicesList">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-3">Cargando dispositivos...</p>
+    </div>
+</div>
+
+<div class="modal fade" id="deviceDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Detalles del Dispositivo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deviceModalContent">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 id="modalDeviceName"></h4>
+                        <p><strong>ID:</strong> <span id="modalDeviceId"></span></p>
+                        <p><strong>Tipo:</strong> <span id="modalDeviceType"></span></p>
+                        <p><strong>Estado:</strong> <span id="modalDeviceStatus"></span></p>
+                        <p><strong>Batería:</strong> <span id="modalDeviceBattery"></span></p>
+                        <p><strong>Última actualización:</strong> <span id="modalDeviceLastUpdate"></span></p>
+                        
+                        <h5 class="mt-4">Mascota Asignada</h5>
+                        <div id="modalPetInfo">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <span class="ms-2">Cargando información...</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Últimas lecturas</h5>
+                        <ul class="list-group" id="modalSensorReadings">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <span>Cargando lecturas...</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="viewDeviceDataBtn">Ver datos completos</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Búsqueda de dispositivos
+    const searchInput = document.getElementById('deviceSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const deviceCards = document.querySelectorAll('.device-card');
+            
+            deviceCards.forEach(card => {
+                const deviceName = card.querySelector('.card-title').textContent.toLowerCase();
+                const deviceId = card.querySelector('.device-id').textContent.toLowerCase();
+                
+                if (deviceName.includes(searchTerm) || deviceId.includes(searchTerm)) {
+                    card.closest('.col-md-4').style.display = '';
+                } else {
+                    card.closest('.col-md-4').style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Mostrar modal con detalles del dispositivo
+    window.showDeviceDetails = function(deviceId) {
+        const deviceDetailModal = new bootstrap.Modal(document.getElementById('deviceDetailModal'));
+        
+        // Buscar el dispositivo
+        const device = window.devices.find(d => d.device_id === deviceId);
+        if (!device) return;
+        
+        // Actualizar información básica
+        document.getElementById('modalDeviceName').textContent = device.name || deviceId;
+        document.getElementById('modalDeviceId').textContent = deviceId;
+        document.getElementById('modalDeviceType').textContent = device.type || 'Desconocido';
+        
+        const statusElem = document.getElementById('modalDeviceStatus');
+        statusElem.textContent = device.status || 'Desconocido';
+        statusElem.className = `device-status-${(device.status || 'unknown').toLowerCase()}`;
+        
+        document.getElementById('modalDeviceBattery').textContent = `${device.battery_level || 0}%`;
+        
+        const lastUpdate = device.last_update 
+            ? new Date(device.last_update).toLocaleString() 
+            : 'Nunca';
+        document.getElementById('modalDeviceLastUpdate').textContent = lastUpdate;
+        
+        // Cargar información de la mascota
+        const petInfoElem = document.getElementById('modalPetInfo');
+        fetch(`/api/devices/${deviceId}/pet/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('No se encontró mascota');
+                }
+                return response.json();
+            })
+            .then(pet => {
+                petInfoElem.innerHTML = `
+                    <p><strong>Nombre:</strong> ${pet.name}</p>
+                    <p><strong>Especie:</strong> ${pet.species}</p>
+                    <p><strong>Raza:</strong> ${pet.breed}</p>
+                    <p><strong>Chip:</strong> ${pet.chip_number}</p>
+                    <p><strong>Dueño:</strong> ${pet.owner_name}</p>
+                `;
+            })
+            .catch(error => {
+                petInfoElem.innerHTML = `<p class="text-muted">No hay mascota asociada a este dispositivo.</p>`;
+            });
+        
+        // Cargar últimas lecturas de sensores
+        const sensorReadingsElem = document.getElementById('modalSensorReadings');
+        
+        if (window.sensorData && window.sensorData[deviceId]) {
+            sensorReadingsElem.innerHTML = '';
+            
+            // Añadir cada tipo de sensor
+            for (const sensorType in window.sensorData[deviceId]) {
+                const readings = window.sensorData[deviceId][sensorType];
+                if (!readings || readings.length === 0) continue;
+                
+                // Obtener última lectura
+                const lastReading = readings[readings.length - 1];
+                
+                let icon, colorClass = '';
+                switch(sensorType) {
+                    case 'temperature':
+                        icon = 'bi-thermometer-half';
+                        colorClass = 'text-danger';
+                        break;
+                    case 'humidity':
+                        icon = 'bi-droplet-half';
+                        colorClass = 'text-primary';
+                        break;
+                    case 'light':
+                        icon = 'bi-brightness-high';
+                        colorClass = 'text-warning';
+                        break;
+                    case 'weight':
+                        icon = 'bi-speedometer';
+                        colorClass = 'text-success';
+                        break;
+                    default:
+                        icon = 'bi-graph-up';
+                }
+                
+                sensorReadingsElem.innerHTML += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi ${icon} ${colorClass} me-2"></i>
+                            ${getSensorLabel(sensorType)}
+                        </span>
+                        <span class="badge bg-primary rounded-pill">
+                            ${lastReading.value} ${lastReading.unit}
+                        </span>
+                    </li>
+                `;
+            }
+            
+            // Si no hay lecturas
+            if (sensorReadingsElem.innerHTML === '') {
+                sensorReadingsElem.innerHTML = `
+                    <li class="list-group-item text-center text-muted">
+                        No hay lecturas recientes
+                    </li>
+                `;
+            }
+        } else {
+            sensorReadingsElem.innerHTML = `
+                <li class="list-group-item text-center text-muted">
+                    No hay lecturas disponibles
+                </li>
+            `;
+        }
+        
+        // Configurar botón para ver datos completos
+        document.getElementById('viewDeviceDataBtn').onclick = function() {
+            // Aquí puedes redirigir a la página específica del dispositivo
+            window.location.href = `/devices/${deviceId}/`;
+        };
+        
+        deviceDetailModal.show();
+    };
+    
+    // Sobrescribir la función updateDeviceList para mostrar los dispositivos en formato tarjeta
+    const originalUpdateDeviceList = window.updateDeviceList;
+    window.updateDeviceList = function() {
+        // Obtener la lista de dispositivos desde la función original
+        if (originalUpdateDeviceList) {
+            originalUpdateDeviceList();
+        }
+        
+        // Actualizar la vista específica de esta página
+        const devicesList = document.getElementById('devicesList');
+        if (!devicesList) return;
+        
+        // Limpiar la lista
+        devicesList.innerHTML = '';
+        
+        // Si no hay dispositivos
+        if (!window.devices || window.devices.length === 0) {
+            devicesList.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-hdd-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="mt-3">No se encontraron dispositivos</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Agregar cada dispositivo
+        window.devices.forEach(device => {
+            const deviceId = device.device_id;
+            const deviceName = device.name || deviceNames[deviceId] || deviceId;
+            const status = device.status || 'unknown';
+            
+            const col = document.createElement('div');
+            col.className = 'col-md-4 mb-4';
+            
+            col.innerHTML = `
+                <div class="card h-100 device-card">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">${deviceName}</h5>
+                        <span class="badge ${status === 'online' ? 'bg-success' : 'bg-danger'}">
+                            ${status.charAt(0).toUpperCase() + status.slice(1)}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>ID:</strong> <span class="device-id">${deviceId}</span>
+                        </p>
+                        <p class="card-text">
+                            <strong>Tipo:</strong> ${device.type || 'Desconocido'}
+                        </p>
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar ${device.battery_level < 20 ? 'bg-danger' : 'bg-success'}" 
+                                role="progressbar" 
+                                style="width: ${device.battery_level || 0}%;" 
+                                aria-valuenow="${device.battery_level || 0}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                                ${device.battery_level || 0}% Batería
+                            </div>
+                        </div>
+                        
+                        <p class="card-text">
+                            <small class="text-muted">
+                                Última actualización: ${device.last_update ? new Date(device.last_update).toLocaleString() : 'Nunca'}
+                            </small>
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary w-100" onclick="showDeviceDetails('${deviceId}')">
+                            <i class="bi bi-info-circle"></i> Ver detalles
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            devicesList.appendChild(col);
+        });
+    };
+});
+</script>
+{% endblock %}
