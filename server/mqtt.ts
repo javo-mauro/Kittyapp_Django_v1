@@ -210,9 +210,10 @@ class MqttClient {
               timestamp: now.toISOString()
             });
           } else {
-            // Si es null o ya está marcado como offline, solo actualizar la BD sin notificar
+            // Si es null o ya está marcado como offline, solo actualizar silenciosamente la BD
             if (device) {
-              log(`Device ${deviceId} already marked as offline, no need to notify`, 'mqtt');
+              // No hacemos log para eliminar contaminación del log con mensajes repetitivos
+              await storage.updateDeviceStatus(deviceId, 'offline');
             }
           }
           
@@ -270,16 +271,10 @@ class MqttClient {
           // Si el dispositivo existe, verificamos si el estado cambió antes de notificar
           const currentDevice = await storage.getDeviceByDeviceId(deviceId);
           
-          // Solo consideramos un cambio de estado si realmente cambia (de online a offline o viceversa)
-          // Notamos además que el cambio debe ser real (no considerar undefined como cambio)
-          const stateChanged = currentDevice?.status !== deviceStatus && 
-                               currentDevice?.status !== undefined && 
-                               deviceStatus !== undefined &&
-                               // Verificar que si ambos son offline u online, no se considere un cambio
-                               !(
-                                 (currentDevice?.status === 'offline' && deviceStatus === 'offline') ||
-                                 (currentDevice?.status === 'online' && deviceStatus === 'online')
-                               );
+          // Solo consideramos un cambio de estado real entre valores diferentes
+          // Hay dos posibles cambios reales: de online a offline o de offline a online
+          const stateChanged = (currentDevice?.status === 'online' && deviceStatus === 'offline') ||
+                               (currentDevice?.status === 'offline' && deviceStatus === 'online');
           
           // Actualizar el estado en la base de datos
           await storage.updateDeviceStatus(deviceId, deviceStatus);
@@ -294,6 +289,8 @@ class MqttClient {
               previousStatus: currentDevice?.status,
               timestamp: new Date().toISOString()
             });
+          } else {
+            // No registramos nada para evitar contaminar los logs
           }
         }
         
