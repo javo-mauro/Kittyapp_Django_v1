@@ -542,36 +542,10 @@ class MqttClient {
     return true;
   }
   
+  // La generación de datos aleatorios ha sido eliminada para usar solo datos reales
   async generateRandomData() {
-    if (!this.isConnected()) {
-      return;
-    }
-    
-    // Generar datos para KPCL0021
-    const kpcData1 = {
-      device_id: "KPCL0021",
-      timestamp: new Date().toISOString(),
-      humidity: Math.random() * 30 + 40, // 40-70%
-      temperature: Math.random() * 10 + 20, // 20-30°C
-      light: Math.random() * 1000 + 200, // 200-1200 lux
-      weight: Math.floor(Math.random() * 500) + 100, // 100-600g
-      status: "online" // Añadimos el campo status como online
-    };
-    
-    this.publish('KPCL0021/pub', kpcData1);
-    
-    // Generar datos para KPCL0022
-    const kpcData2 = {
-      device_id: "KPCL0022",
-      timestamp: new Date().toISOString(),
-      humidity: Math.random() * 30 + 40, // 40-70%
-      temperature: Math.random() * 10 + 20, // 20-30°C
-      light: Math.random() * 1000 + 200, // 200-1200 lux
-      weight: Math.floor(Math.random() * 500) + 100, // 100-600g
-      status: "online" // Añadimos el campo status como online
-    };
-    
-    this.publish('KPCL0022/pub', kpcData2);
+    // Función deshabilitada para usar solo datos reales del broker MQTT
+    return;
   }
 }
 
