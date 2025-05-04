@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}KittyPawSensors - {{ pet.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>
+            <a href="{% url 'pets' %}" class="text-decoration-none">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            {{ pet.name }}
+        </h2>
+    </div>
+    <div class="col-md-6 text-end">
+        {% if pet.kitty_paw_device %}
+        <a href="{% url 'device_detail' pet.kitty_paw_device.device_id %}" class="btn btn-primary">
+            <i class="bi bi-hdd-rack"></i> Ver dispositivo
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Información de la Mascota</h5>
+            </div>
+            <div class="card-body">
+                <h4>{{ pet.name }}</h4>
+                <p><strong>Chip:</strong> {{ pet.chip_number }}</p>
+                <p><strong>Especie:</strong> {{ pet.species }}</p>
+                <p><strong>Raza:</strong> {{ pet.breed }}</p>
+                <p><strong>Fecha de nacimiento:</strong> {{ pet.birth_date|date:"d/m/Y"|default:"No registrada" }}</p>
+                <p><strong>Fecha de adquisición:</strong> {{ pet.acquisition_date|date:"d/m/Y" }}</p>
+                <p><strong>Origen:</strong> {{ pet.origin }}</p>
+                
+                <div class="mb-3 mt-4">
+                    <span class="badge {% if pet.has_vaccinations %}bg-success{% else %}bg-danger{% endif %} me-2">
+                        <i class="bi {% if pet.has_vaccinations %}bi-shield-check{% else %}bi-shield-x{% endif %}"></i>
+                        {{ pet.has_vaccinations|yesno:"Vacunado,No vacunado" }}
+                    </span>
+                    
+                    <span class="badge {% if pet.has_diseases %}bg-danger{% else %}bg-success{% endif %} me-2">
+                        <i class="bi {% if pet.has_diseases %}bi-heart-pulse{% else %}bi-heart{% endif %}"></i>
+                        {{ pet.has_diseases|yesno:"Con enfermedades,Saludable" }}
+                    </span>
+                    
+                    <span class="badge {% if pet.kitty_paw_device %}bg-primary{% else %}bg-secondary{% endif %}">
+                        <i class="bi bi-hdd-rack"></i>
+                        {{ pet.kitty_paw_device|yesno:"Dispositivo conectado,Sin dispositivo" }}
+                    </span>
+                </div>
+                
+                {% if pet.has_diseases and pet.disease_notes %}
+                <div class="alert alert-warning mt-3">
+                    <h5>Notas médicas:</h5>
+                    <p>{{ pet.disease_notes }}</p>
+                </div>
+                {% endif %}
+                
+                {% if pet.background %}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Antecedentes</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ pet.background }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Información del Propietario</h5>
+            </div>
+            <div class="card-body" id="ownerInfo">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-3">Cargando información del propietario...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Dispositivo KittyPaw</h5>
+            </div>
+            <div class="card-body" id="deviceInfo">
+                {% if pet.kitty_paw_device %}
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-3">Cargando información del dispositivo...</p>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-hdd-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="mt-3">No hay dispositivo KittyPaw asociado a esta mascota.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if pet.kitty_paw_device %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Últimas lecturas de sensores</h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="sensorReadings">
+                    <div class="col-12 text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-3">Cargando lecturas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cargar información del propietario
+        loadOwnerInfo();
+        
+        // Si hay dispositivo, cargar su información
+        {% if pet.kitty_paw_device %}
+        loadDeviceInfo();
+        loadSensorReadings();
+        {% endif %}
+    });
+    
+    function loadOwnerInfo() {
+        const ownerInfoElem = document.getElementById('ownerInfo');
+        
+        fetch('/api/pet-owners/{{ pet.owner.id }}/')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error cargando propietario');
+                }
+                return response.json();
+            })
+            .then(owner => {
+                ownerInfoElem.innerHTML = `
+                    <h4>${owner.name} ${owner.paternal_last_name} ${owner.maternal_last_name || ''}</h4>
+                    <p><strong>Email:</strong> ${owner.email}</p>
+                    <p><strong>Dirección:</strong> ${owner.address}</p>
+                    <p><strong>Fecha de nacimiento:</strong> ${new Date(owner.birth_date).toLocaleDateString()}</p>
+                    <p><strong>Nombre de usuario:</strong> ${owner.username}</p>
+                    <p><strong>Fecha de registro:</strong> ${new Date(owner.created_at).toLocaleDateString()}</p>
+                `;
+            })
+            .catch(error => {
+                ownerInfoElem.innerHTML = `
+                    <div class="alert alert-danger">
+                        Error cargando información del propietario: ${error.message}
+                    </div>
+                `;
+            });
+    }
+    
+    {% if pet.kitty_paw_device %}
+    function loadDeviceInfo() {
+        const deviceInfoElem = document.getElementById('deviceInfo');
+        
+        fetch('/api/devices/{{ pet.kitty_paw_device.device_id }}/')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error cargando dispositivo');
+                }
+                return response.json();
+            })
+            .then(device => {
+                const lastUpdate = device.last_update 
+                    ? new Date(device.last_update).toLocaleString() 
+                    : 'Nunca';
+                
+                deviceInfoElem.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>${device.name || device.device_id}</h4>
+                            <p><strong>ID:</strong> ${device.device_id}</p>
+                            <p><strong>Tipo:</strong> ${device.type || 'Desconocido'}</p>
+                            <p><strong>Estado:</strong> <span class="device-status-${(device.status || 'unknown').toLowerCase()}">${device.status || 'Desconocido'}</span></p>
+                            <p><strong>Última actualización:</strong> ${lastUpdate}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Nivel de batería</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="progress" style="height: 30px;">
+                                        <div class="progress-bar ${device.battery_level < 20 ? 'bg-danger' : 'bg-success'}" 
+                                            role="progressbar" 
+                                            style="width: ${device.battery_level || 0}%;" 
+                                            aria-valuenow="${device.battery_level || 0}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                            ${device.battery_level || 0}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-center">
+                                <a href="/devices/${device.device_id}/" class="btn btn-primary">
+                                    <i class="bi bi-graph-up"></i> Ver datos del dispositivo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                deviceInfoElem.innerHTML = `
+                    <div class="alert alert-danger">
+                        Error cargando información del dispositivo: ${error.message}
+                    </div>
+                `;
+            });
+    }
+    
+    function loadSensorReadings() {
+        const sensorReadingsElem = document.getElementById('sensorReadings');
+        const deviceId = '{{ pet.kitty_paw_device.device_id }}';
+        
+        fetch(`/api/sensor-data/${deviceId}/?limit=4`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error cargando lecturas');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.length === 0) {
+                    sensorReadingsElem.innerHTML = `
+                        <div class="col-12 text-center py-4">
+                            <i class="bi bi-bar-chart text-muted" style="font-size: 3rem;"></i>
+                            <p class="mt-3">No hay lecturas registradas para este dispositivo.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Agrupar por tipo de sensor
+                const readings = {};
+                for (const reading of data) {
+                    const sensorType = reading.sensor_type;
+                    if (!readings[sensorType]) {
+                        readings[sensorType] = reading;
+                    } else if (new Date(reading.timestamp) > new Date(readings[sensorType].timestamp)) {
+                        readings[sensorType] = reading;
+                    }
+                }
+                
+                // Limpiar el contenedor
+                sensorReadingsElem.innerHTML = '';
+                
+                // Sensor icons and colors
+                const sensorIcons = {
+                    'temperature': 'bi-thermometer-half',
+                    'humidity': 'bi-droplet-half',
+                    'light': 'bi-brightness-high',
+                    'weight': 'bi-speedometer'
+                };
+                
+                const sensorColors = {
+                    'temperature': '#FF5F6D',
+                    'humidity': '#38B6FF',
+                    'light': '#FFC371',
+                    'weight': '#8C54FF'
+                };
+                
+                // Añadir cada tipo de sensor
+                for (const sensorType in readings) {
+                    const reading = readings[sensorType];
+                    const readingData = JSON.parse(reading.data);
+                    
+                    const icon = sensorIcons[sensorType] || 'bi-graph-up';
+                    const color = sensorColors[sensorType] || '#FF5F6D';
+                    
+                    sensorReadingsElem.innerHTML += `
+                        <div class="col-md-3 col-sm-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi ${icon}" style="font-size: 2.5rem; color: ${color};"></i>
+                                    <h5 class="mt-3">${getSensorLabel(sensorType)}</h5>
+                                    <h3 class="display-6">${readingData.value}</h3>
+                                    <p>${readingData.unit}</p>
+                                    <small class="text-muted">
+                                        ${new Date(reading.timestamp).toLocaleString()}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                sensorReadingsElem.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            Error cargando lecturas de sensores: ${error.message}
+                        </div>
+                    </div>
+                `;
+            });
+    }
+    {% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}KittyPawSensors - {{ device.name|default:device.device_id }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>
+            <a href="{% url 'devices' %}" class="text-decoration-none">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            {{ device.name|default:device.device_id }}
+        </h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <div class="btn-group">
+            <a href="#" class="btn btn-outline-primary" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise"></i> Actualizar datos
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Información del Dispositivo</h5>
+            </div>
+            <div class="card-body">
+                <h4>{{ device.name|default:device.device_id }}</h4>
+                <p><strong>ID:</strong> {{ device.device_id }}</p>
+                <p><strong>Tipo:</strong> {{ device.type|default:"Desconocido" }}</p>
+                <p><strong>Estado:</strong> <span class="device-status-{{ device.status|default:'unknown'|lower }}">{{ device.status|default:"Desconocido" }}</span></p>
+                <p><strong>Batería:</strong> {{ device.battery_level|default:0 }}%</p>
+                <p><strong>Dirección IP:</strong> {{ device.ip_address|default:"No disponible" }}</p>
+                <p><strong>Última actualización:</strong> {{ device.last_update|date:"d/m/Y H:i:s"|default:"Nunca" }}</p>
+                
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar {% if device.battery_level < 20 %}bg-danger{% else %}bg-success{% endif %}" 
+                        role="progressbar" 
+                        style="width: {{ device.battery_level|default:0 }}%;" 
+                        aria-valuenow="{{ device.battery_level|default:0 }}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                        {{ device.battery_level|default:0 }}% Batería
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Mascota Asociada</h5>
+            </div>
+            <div class="card-body" id="petInfo">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-3">Cargando información de la mascota...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Temperatura</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Humedad</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="humidityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Luz</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="lightChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Peso</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Historial de Lecturas</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha y Hora</th>
+                                <th>Sensor</th>
+                                <th>Valor</th>
+                                <th>Unidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sensorHistoryTable">
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                    Cargando historial...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Variable global para el dispositivo seleccionado
+    const deviceId = '{{ device.device_id }}';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar gráficos específicos de este dispositivo
+        window.selectedDevice = deviceId;
+        
+        // Cargar información de la mascota
+        loadPetInfo();
+        
+        // Cargar historial de sensores
+        loadSensorHistory();
+    });
+    
+    function loadPetInfo() {
+        const petInfoElem = document.getElementById('petInfo');
+        
+        fetch(`/api/devices/${deviceId}/pet/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('No se encontró mascota');
+                }
+                return response.json();
+            })
+            .then(pet => {
+                petInfoElem.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>${pet.name}</h4>
+                            <p><strong>Especie:</strong> ${pet.species}</p>
+                            <p><strong>Raza:</strong> ${pet.breed}</p>
+                            <p><strong>Chip:</strong> ${pet.chip_number}</p>
+                            <p><strong>Vacunado:</strong> <span class="${pet.has_vaccinations ? 'text-success' : 'text-danger'}">${pet.has_vaccinations ? 'Sí' : 'No'}</span></p>
+                            <p><strong>Origen:</strong> ${pet.origin}</p>
+                            <p><strong>Fecha de adquisición:</strong> ${new Date(pet.acquisition_date).toLocaleDateString()}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Información del Propietario</h5>
+                            <p><strong>Nombre:</strong> ${pet.owner_name}</p>
+                            <a href="/pets/${pet.id}/" class="btn btn-primary mt-3">
+                                <i class="bi bi-eye"></i> Ver detalles de la mascota
+                            </a>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                petInfoElem.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                        <p class="mt-3">No hay mascota asociada a este dispositivo.</p>
+                    </div>
+                `;
+            });
+    }
+    
+    function loadSensorHistory() {
+        const tableElem = document.getElementById('sensorHistoryTable');
+        
+        fetch(`/api/sensor-data/${deviceId}/?limit=50`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error cargando datos');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.length === 0) {
+                    tableElem.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                No hay datos registrados para este dispositivo.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // Ordenar por fecha descendente
+                data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Limpiar la tabla
+                tableElem.innerHTML = '';
+                
+                // Agregar cada lectura
+                data.forEach(reading => {
+                    try {
+                        const readingData = JSON.parse(reading.data);
+                        
+                        tableElem.innerHTML += `
+                            <tr>
+                                <td>${new Date(reading.timestamp).toLocaleString()}</td>
+                                <td>${getSensorLabel(reading.sensor_type)}</td>
+                                <td>${readingData.value}</td>
+                                <td>${readingData.unit}</td>
+                            </tr>
+                        `;
+                    } catch (e) {
+                        console.error('Error procesando lectura:', e);
+                    }
+                });
+            })
+            .catch(error => {
+                tableElem.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-danger">
+                            Error cargando historial: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            });
+    }
+    
+    function refreshData() {
+        // Actualizar la información de la mascota
+        loadPetInfo();
+        
+        // Actualizar el historial de sensores
+        loadSensorHistory();
+        
+        // Actualizar los gráficos
+        updateCharts();
+    }
+</script>
+{% endblock %}

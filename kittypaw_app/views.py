@@ -1,9 +1,11 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.conf import settings
 from django.db.models import Count
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_protect
 
 from rest_framework import viewsets, status, permissions
 from rest_framework.views import APIView
@@ -210,3 +212,127 @@ class SystemInfoView(APIView):
         
         serializer = SystemInfoSerializer(info)
         return Response(serializer.data)
+
+# Vistas de plantillas Django
+@login_required(login_url='/login/')
+def index_view(request):
+    """Vista principal del dashboard"""
+    # Obtener datos para el contexto
+    active_devices = Device.objects.filter(status='online').count()
+    total_devices = Device.objects.count()
+    
+    # Si el usuario no es admin, filtrar dispositivos por propietario
+    if request.user.role != 'admin':
+        # Buscar el propietario asociado con este usuario (si existe)
+        try:
+            owner = PetOwner.objects.get(username=request.user.username)
+            # Obtener las mascotas del propietario
+            pets = Pet.objects.filter(owner=owner)
+            # Obtener los dispositivos asociados a estas mascotas
+            device_ids = [pet.kitty_paw_device_id for pet in pets if pet.kitty_paw_device_id]
+            active_devices = Device.objects.filter(device_id__in=device_ids, status='online').count()
+            total_devices = Device.objects.filter(device_id__in=device_ids).count()
+        except PetOwner.DoesNotExist:
+            # El usuario no está asociado a ningún propietario
+            active_devices = 0
+            total_devices = 0
+    
+    # Contexto para la plantilla
+    context = {
+        'active_devices': active_devices,
+        'total_devices': total_devices,
+        'page_title': 'Dashboard'
+    }
+    return render(request, 'index.html', context)
+
+@login_required(login_url='/login/')
+def devices_view(request):
+    """Vista de dispositivos"""
+    return render(request, 'devices.html', {'page_title': 'Dispositivos'})
+
+@login_required(login_url='/login/')
+def device_detail_view(request, device_id):
+    """Vista detallada de un dispositivo específico"""
+    device = get_object_or_404(Device, device_id=device_id)
+    
+    # Verificar si el usuario tiene acceso a este dispositivo
+    if request.user.role != 'admin':
+        try:
+            owner = PetOwner.objects.get(username=request.user.username)
+            pet = Pet.objects.filter(owner=owner, kitty_paw_device=device).first()
+            if not pet:
+                # El usuario no tiene acceso a este dispositivo
+                return redirect('devices')
+        except PetOwner.DoesNotExist:
+            # El usuario no está asociado a ningún propietario
+            return redirect('devices')
+    
+    context = {
+        'device': device,
+        'page_title': f'Dispositivo: {device.name or device.device_id}'
+    }
+    return render(request, 'device_detail.html', context)
+
+@login_required(login_url='/login/')
+def pets_view(request):
+    """Vista de mascotas"""
+    return render(request, 'pets.html', {'page_title': 'Mascotas'})
+
+@login_required(login_url='/login/')
+def pet_detail_view(request, pet_id):
+    """Vista detallada de una mascota específica"""
+    pet = get_object_or_404(Pet, id=pet_id)
+    
+    # Verificar si el usuario tiene acceso a esta mascota
+    if request.user.role != 'admin':
+        try:
+            owner = PetOwner.objects.get(username=request.user.username)
+            if pet.owner != owner:
+                # El usuario no tiene acceso a esta mascota
+                return redirect('pets')
+        except PetOwner.DoesNotExist:
+            # El usuario no está asociado a ningún propietario
+            return redirect('pets')
+    
+    context = {
+        'pet': pet,
+        'page_title': f'Mascota: {pet.name}'
+    }
+    return render(request, 'pet_detail.html', context)
+
+@csrf_protect
+def login_view(request):
+    """Vista de inicio de sesión"""
+    error_message = None
+    
+    # Si el usuario ya está autenticado, redirigir al dashboard
+    if request.user.is_authenticated:
+        return redirect('index')
+        
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        # Autenticar usuario
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            # Iniciar sesión
+            login(request, user)
+            
+            # Actualizar fecha de último login
+            user.last_login = timezone.now()
+            user.save()
+            
+            # Redirigir al dashboard
+            return redirect('index')
+        else:
+            error_message = 'Nombre de usuario o contraseña incorrectos'
+    
+    return render(request, 'login.html', {'error_message': error_message, 'page_title': 'Iniciar Sesión'})
+
+@login_required(login_url='/login/')
+def logout_view(request):
+    """Vista para cerrar sesión"""
+    logout(request)
+    return redirect('login')

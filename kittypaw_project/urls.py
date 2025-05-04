@@ -18,15 +18,21 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import TemplateView
+from kittypaw_app import views as kittypaw_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('kittypaw_app.urls')),
     path('api-auth/', include('rest_framework.urls')),
     
-    # Ruta para la interfaz de usuario de React
-    path('', TemplateView.as_view(template_name='index.html')),
+    # Rutas para las vistas de plantillas
+    path('', kittypaw_views.index_view, name='index'),
+    path('login/', kittypaw_views.login_view, name='login'),
+    path('logout/', kittypaw_views.logout_view, name='logout'),
+    path('devices/', kittypaw_views.devices_view, name='devices'),
+    path('devices/<str:device_id>/', kittypaw_views.device_detail_view, name='device_detail'),
+    path('pets/', kittypaw_views.pets_view, name='pets'),
+    path('pets/<int:pet_id>/', kittypaw_views.pet_detail_view, name='pet_detail'),
 ]
 
 # Configurar el servidor de medios estáticos durante el desarrollo
