@@ -174,13 +174,29 @@ class MqttClient {
         
         // Check if device exists, if not create it
         let device = await storage.getDeviceByDeviceId(deviceId);
+        
+        // Estado del dispositivo, por defecto 'online' si no se especifica
+        const deviceStatus = kpcData.status || 'online';
+        
         if (!device) {
+          // Si el dispositivo no existe, lo creamos
           device = await storage.createDevice({
             deviceId,
             name: `Kitty Paw Device ${deviceId}`,
             type: 'KittyPaw',
-            status: 'online',
+            status: deviceStatus,
             batteryLevel: 100
+          });
+        } else {
+          // Si el dispositivo existe, actualizamos su estado
+          await storage.updateDeviceStatus(deviceId, deviceStatus);
+          
+          // Notificar a los clientes del cambio de estado
+          this.broadcastToClients({
+            type: 'device_status_update',
+            deviceId,
+            status: deviceStatus,
+            timestamp: new Date().toISOString()
           });
         }
         
