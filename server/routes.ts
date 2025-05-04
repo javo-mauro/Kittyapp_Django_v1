@@ -618,62 +618,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para generar datos simulados para un dispositivo específico
+  // Endpoint para generar datos simulados para un dispositivo específico o todos los dispositivos
   app.post('/api/simulate-data', async (req: Request, res: Response) => {
     try {
-      const { deviceId } = req.body;
+      const { deviceId, status = 'online' } = req.body;
       
-      if (!deviceId) {
-        return res.status(400).json({ error: "Device ID is required" });
-      }
+      // Si no se especifica un dispositivo, simular para ambos dispositivos KPCL0021 y KPCL0022
+      const deviceIds = deviceId ? [deviceId] : ['KPCL0021', 'KPCL0022'];
       
-      // Simular datos para diferentes tipos de sensores
-      const sensorTypes = ['temperature', 'humidity', 'light', 'weight'];
-      const now = new Date();
+      const allGeneratedData = [];
       
-      const generatedData = [];
-      
-      for (const sensorType of sensorTypes) {
-        let value = 0;
-        let unit = '';
-        
-        switch (sensorType) {
-          case 'temperature':
-            value = 20 + Math.random() * 10; // Entre 20 y 30
-            unit = '°C';
-            break;
-          case 'humidity':
-            value = 30 + Math.random() * 50; // Entre 30 y 80
-            unit = '%';
-            break;
-          case 'light':
-            value = Math.floor(Math.random() * 1000); // Entre 0 y 1000
-            unit = 'lux';
-            break;
-          case 'weight':
-            value = 4 + Math.random() * 2; // Entre 4 y 6
-            unit = 'kg';
-            break;
+      for (const currentDeviceId of deviceIds) {
+        if (mqttClient.isConnected()) {
+          // Generar datos directamente para ser enviados vía MQTT
+          const kpcData = {
+            device_id: currentDeviceId,
+            timestamp: new Date().toISOString(),
+            humidity: Math.random() * 30 + 40, // 40-70%
+            temperature: Math.random() * 10 + 20, // 20-30°C
+            light: Math.random() * 1000 + 200, // 200-1200 lux
+            weight: Math.floor(Math.random() * 500) + 100, // 100-600g
+            status: status // Usar el status pasado como parámetro (o 'online' por defecto)
+          };
+          
+          const kpcMessage = JSON.stringify(kpcData);
+          
+          // Publicar mensaje directamente al tópico MQTT
+          mqttClient.client.publish(`${currentDeviceId}/pub`, kpcMessage);
+          log(`Published test message to ${currentDeviceId}/pub: ${kpcMessage}`, 'express');
+          
+          allGeneratedData.push({
+            deviceId: currentDeviceId,
+            data: kpcData,
+            timestamp: kpcData.timestamp
+          });
+        } else {
+          // Si el cliente MQTT no está conectado, actualizar el estado en la BD manualmente
+          const sensorTypes = ['temperature', 'humidity', 'light', 'weight'];
+          
+          for (const sensorType of sensorTypes) {
+            let value = 0;
+            let unit = '';
+            
+            switch (sensorType) {
+              case 'temperature':
+                value = 20 + Math.random() * 10; // Entre 20 y 30
+                unit = '°C';
+                break;
+              case 'humidity':
+                value = 40 + Math.random() * 30; // Entre 40 y 70
+                unit = '%';
+                break;
+              case 'light':
+                value = 200 + Math.random() * 1000; // Entre 200 y 1200
+                unit = 'lux';
+                break;
+              case 'weight':
+                value = 100 + Math.floor(Math.random() * 500); // Entre 100 y 600
+                unit = 'g';
+                break;
+            }
+            
+            // Crear el registro de datos del sensor
+            const sensorData = await storage.createSensorData({
+              deviceId: currentDeviceId,
+              sensorType,
+              data: { value, unit }
+            });
+            
+            allGeneratedData.push(sensorData);
+          }
+          
+          // Actualizar el estado del dispositivo y la batería
+          await storage.updateDeviceStatus(currentDeviceId, status);
+          await storage.updateDeviceBattery(currentDeviceId, 90 + Math.floor(Math.random() * 10)); // Entre 90 y 99
         }
-        
-        // Crear el registro de datos del sensor
-        const sensorData = await storage.createSensorData({
-          deviceId,
-          sensorType,
-          data: { value, unit }
-        });
-        
-        generatedData.push(sensorData);
       }
-      
-      // Actualizar el estado del dispositivo y la batería
-      await storage.updateDeviceStatus(deviceId, 'online');
-      await storage.updateDeviceBattery(deviceId, 90 + Math.floor(Math.random() * 10)); // Entre 90 y 99
       
       return res.json({ 
         success: true, 
-        message: `Datos simulados generados para ${deviceId}`,
-        data: generatedData
+        message: deviceId 
+          ? `Datos simulados generados para ${deviceId}`
+          : `Datos simulados generados para todos los dispositivos`,
+        status: status,
+        data: allGeneratedData
       });
     } catch (error) {
       console.error("Error generando datos simulados:", error);
