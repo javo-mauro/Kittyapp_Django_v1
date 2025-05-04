@@ -168,7 +168,7 @@ async function insertInitialData(): Promise<void> {
     
     let adminId = 0;
     
-    if (!adminExists[0] || adminExists[0]?.count === 0) {
+    if (!adminExists[0] || Number(adminExists[0]?.count) === 0) {
       const [admin] = await db.insert(schema.users).values({
         username: "admin",
         password: "admin123",
@@ -182,6 +182,7 @@ async function insertInitialData(): Promise<void> {
       // Obtener el ID del admin
       const [admin] = await db.select().from(schema.users).where(sql`username = 'admin'`);
       adminId = admin?.id || 0;
+      console.log('Usuario admin encontrado con ID:', adminId);
     }
     
     // Insertar dueño de mascota Javier Dayne
@@ -191,7 +192,7 @@ async function insertInitialData(): Promise<void> {
     
     let ownerId: number | undefined;
     
-    if (!jdayneExists[0] || jdayneExists[0]?.count === 0) {
+    if (!jdayneExists[0] || Number(jdayneExists[0]?.count) === 0) {
       const [owner] = await db.insert(schema.petOwners).values({
         name: "Javier",
         paternalLastName: "Dayne",
@@ -215,7 +216,7 @@ async function insertInitialData(): Promise<void> {
       .from(schema.devices)
       .where(sql`device_id = 'KPCL0021'`);
     
-    if (!device1Exists[0] || device1Exists[0]?.count === 0) {
+    if (!device1Exists[0] || Number(device1Exists[0]?.count) === 0) {
       await db.insert(schema.devices).values({
         deviceId: "KPCL0021",
         name: "Collar de Malto",
@@ -230,7 +231,7 @@ async function insertInitialData(): Promise<void> {
       .from(schema.devices)
       .where(sql`device_id = 'KPCL0022'`);
     
-    if (!device2Exists[0] || device2Exists[0]?.count === 0) {
+    if (!device2Exists[0] || Number(device2Exists[0]?.count) === 0) {
       await db.insert(schema.devices).values({
         deviceId: "KPCL0022",
         name: "Placa de Canela",
@@ -247,7 +248,7 @@ async function insertInitialData(): Promise<void> {
         .from(schema.pets)
         .where(sql`chip_number = 'CHIP123456'`);
       
-      if (!petExists[0] || petExists[0]?.count === 0) {
+      if (!petExists[0] || Number(petExists[0]?.count) === 0) {
         await db.insert(schema.pets).values({
           ownerId,
           name: "Malto",
