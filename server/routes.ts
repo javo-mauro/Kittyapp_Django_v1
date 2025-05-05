@@ -145,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
       
       // Verificar si el usuario tiene privilegios de administrador
-      const isAdmin = userRole === 'admin' || userId === 1; // Admin tiene userId = 1
+      const isAdmin = userRole === 'admin'; // Solo basarse en el rol
       
       // Si el usuario no es administrador, solo devuelve su propio perfil
       if (!isAdmin && userId) {
@@ -315,8 +315,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filtrar dispositivos según el usuario
       let filteredDevices = allDevices;
       
-      // Permitir que jdayne y admin vean todos los dispositivos
-      if (username === 'admin' || userId === 1) {
+      // Solo admin ve todos los dispositivos
+      const userRole = req.query.role as string;
+      if (username === 'admin' || userRole === 'admin') {
         filteredDevices = allDevices; // El admin ve todos los dispositivos
       }
       // Para usuario "jdayne" asegurar que vea ambos dispositivos
@@ -635,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userRole = req.query.role as string;
       
       // Verificar si el usuario tiene privilegios de administrador
-      const isAdmin = userRole === 'admin' || userId === 1; // Admin tiene userId = 1
+      const isAdmin = userRole === 'admin';
       
       // Si es admin, devolver todas las mascotas
       if (isAdmin) {
