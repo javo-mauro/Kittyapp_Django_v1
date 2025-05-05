@@ -363,10 +363,14 @@ function updateCharts() {
     let combinedData = [];
     let datasets = [];
     
+    // Obtener solo los IDs de dispositivos autorizados para este usuario
+    const authorizedDeviceIds = devices.map(d => d.deviceId);
+    
     if (selectedDevice === 'all') {
-      // Mostrar datos de todos los dispositivos
+      // Mostrar datos solo de los dispositivos autorizados
       for (const deviceId in sensorData) {
-        if (sensorData[deviceId][sensorType]) {
+        // Verificar si este dispositivo está autorizado para este usuario
+        if (authorizedDeviceIds.includes(deviceId) && sensorData[deviceId][sensorType]) {
           const deviceName = deviceNames[deviceId] || deviceId;
           const color = getDeviceColor(deviceId);
           
@@ -387,8 +391,11 @@ function updateCharts() {
         }
       }
     } else {
-      // Mostrar datos solo del dispositivo seleccionado
-      if (sensorData[selectedDevice] && sensorData[selectedDevice][sensorType]) {
+      // Verificar si el dispositivo seleccionado está autorizado
+      if (authorizedDeviceIds.includes(selectedDevice) && 
+          sensorData[selectedDevice] && 
+          sensorData[selectedDevice][sensorType]) {
+        
         combinedData = sensorData[selectedDevice][sensorType];
         
         datasets = [{
