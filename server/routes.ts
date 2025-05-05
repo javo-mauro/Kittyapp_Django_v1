@@ -561,6 +561,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/pet-owners/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Verificar si el usuario tiene privilegios
+      const isAdmin = userRole === 'admin';
+      
+      // Si no es admin, verificar que esté solicitando su propia información
+      if (!isAdmin && userId !== id) {
+        return res.status(403).json({ 
+          message: 'No tienes permiso para ver información de otro usuario' 
+        });
+      }
+      
       const owner = await storage.getPetOwner(id);
       
       if (!owner) {
@@ -648,7 +661,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/pet-owners/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
       const owner = req.body;
+      
+      // Verificar si el usuario tiene privilegios
+      const isAdmin = userRole === 'admin';
+      
+      // Si no es admin, verificar que esté actualizando su propia información
+      if (!isAdmin && userId !== id) {
+        return res.status(403).json({ 
+          message: 'No tienes permiso para modificar información de otro usuario' 
+        });
+      }
+      
       const updatedOwner = await storage.updatePetOwner(id, owner);
       res.json(updatedOwner);
     } catch (error) {
@@ -660,6 +686,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/pet-owners/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Verificar si el usuario tiene privilegios
+      const isAdmin = userRole === 'admin';
+      
+      // Solo administradores o el propio usuario pueden eliminar un perfil
+      if (!isAdmin && userId !== id) {
+        return res.status(403).json({ 
+          message: 'No tienes permiso para eliminar a otro usuario' 
+        });
+      }
+      
       const result = await storage.deletePetOwner(id);
       
       if (!result) {
@@ -1031,21 +1070,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
       const userRole = req.query.role as string;
       
+      // Verificar si el dispositivo está en la lista de dispositivos permitidos para el usuario
+      // si no es admin
+      if (userRole !== 'admin' && userId) {
+        const userDevices = await filterDevicesByUserPets(userId);
+        const deviceAllowed = userDevices.some(device => device.deviceId === deviceId);
+        
+        if (!deviceAllowed) {
+          return res.status(403).json({ 
+            message: 'No tienes permiso para ver información sobre este dispositivo' 
+          });
+        }
+      }
+      
       // Obtener la mascota por ID de dispositivo
       const pet = await storage.getPetByKittyPawDeviceId(deviceId);
       
       if (!pet) {
         return res.status(404).json({ message: 'No se encontró mascota asociada a este dispositivo' });
-      }
-      
-      // Verificar si el usuario tiene privilegios de administrador
-      const isAdmin = userRole === 'admin';
-      
-      // Si no es admin, verificar que la mascota pertenezca al usuario
-      if (!isAdmin && userId !== pet.ownerId) {
-        return res.status(403).json({ 
-          message: 'No tienes permiso para ver esta mascota' 
-        });
       }
       
       res.json(pet);
