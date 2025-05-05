@@ -300,8 +300,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/devices', async (req: Request, res: Response) => {
     try {
-      const deviceData = insertDeviceSchema.parse(req.body);
+      console.log("Datos recibidos para crear dispositivo:", req.body);
+      
+      // Crear un objeto con las propiedades correctas para el esquema
+      const deviceToCreate = {
+        deviceId: req.body.deviceId,
+        name: req.body.name,
+        type: req.body.type,
+        status: req.body.status || 'offline',
+        batteryLevel: req.body.batteryLevel || 100,
+        ipAddress: req.body.ipAddress || null
+      };
+      
+      console.log("Datos procesados para crear dispositivo:", deviceToCreate);
+      
+      // Validar con el esquema
+      const deviceData = insertDeviceSchema.parse(deviceToCreate);
       const device = await storage.createDevice(deviceData);
+      
+      console.log("Dispositivo creado con éxito:", device);
       
       // Suscribirnos al tópico del dispositivo recién creado
       if (device && device.deviceId) {
@@ -311,10 +328,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(device);
     } catch (error) {
+      console.error("Error creando dispositivo:", error);
+      
       if (error instanceof z.ZodError) {
-        res.status(400).json({ message: error.errors });
+        const formattedErrors = error.errors.map(e => {
+          return `Campo ${e.path.join('.')}: ${e.message}`;
+        }).join(', ');
+        
+        console.error("Error de validación:", formattedErrors);
+        res.status(400).json({ message: `Error de validación: ${formattedErrors}` });
       } else {
-        res.status(500).json({ message: 'Failed to create device' });
+        // Log detallado del error
+        console.error("Error de servidor:", error);
+        res.status(500).json({ message: 'Error al crear el dispositivo. Detalles: ' + (error.message || 'Error desconocido') });
       }
     }
   });

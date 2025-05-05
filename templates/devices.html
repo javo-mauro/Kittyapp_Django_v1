@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             saveNewDeviceBtn.disabled = true;
             saveNewDeviceBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creando...';
             
-            // Datos para enviar al servidor
+            // Datos para enviar al servidor - Usando los nombres de campo exactos del esquema
             const deviceData = {
                 deviceId: deviceId,
                 name: deviceName,
