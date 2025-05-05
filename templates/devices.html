@@ -8,6 +8,9 @@
         <h2>Dispositivos</h2>
     </div>
     <div class="col-md-6 text-end">
+        <button class="btn btn-success me-2" id="createDeviceBtn" data-bs-toggle="modal" data-bs-target="#createDeviceModal">
+            <i class="bi bi-plus-circle"></i> Nuevo Dispositivo
+        </button>
         <div class="input-group w-50 float-end">
             <input type="text" class="form-control" id="deviceSearch" placeholder="Buscar dispositivo...">
             <button class="btn btn-outline-primary" type="button">
@@ -71,6 +74,48 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para crear un nuevo dispositivo -->
+<div class="modal fade" id="createDeviceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Crear Nuevo Dispositivo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newDeviceForm">
+                    <div class="mb-3">
+                        <label for="newDeviceId" class="form-label">ID del Dispositivo</label>
+                        <input type="text" class="form-control" id="newDeviceId" required
+                               placeholder="Ejemplo: KPCL0024">
+                        <div class="form-text">Utiliza el formato KPCL#### para los dispositivos KittyPaw.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newDeviceName" class="form-label">Nombre del Dispositivo</label>
+                        <input type="text" class="form-control" id="newDeviceName" required
+                               placeholder="Ejemplo: Collar para Firulais">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newDeviceType" class="form-label">Tipo de Dispositivo</label>
+                        <select class="form-select" id="newDeviceType" required>
+                            <option value="KittyPaw Collar">KittyPaw Collar</option>
+                            <option value="KittyPaw Tracker">KittyPaw Tracker</option>
+                            <option value="KittyPaw Sensor">KittyPaw Sensor</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                </form>
+                <div class="alert alert-danger mt-3 d-none" id="deviceFormError"></div>
+                <div class="alert alert-success mt-3 d-none" id="deviceFormSuccess"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="saveNewDeviceBtn">Crear Dispositivo</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -95,6 +140,142 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+    
+    // Crear nuevo dispositivo
+    const saveNewDeviceBtn = document.getElementById('saveNewDeviceBtn');
+    if (saveNewDeviceBtn) {
+        saveNewDeviceBtn.addEventListener('click', function() {
+            // Obtener los valores del formulario
+            const deviceId = document.getElementById('newDeviceId').value.trim();
+            const deviceName = document.getElementById('newDeviceName').value.trim();
+            const deviceType = document.getElementById('newDeviceType').value;
+            
+            // Validar datos
+            if (!deviceId || !deviceName || !deviceType) {
+                showDeviceFormError('Por favor, completa todos los campos requeridos.');
+                return;
+            }
+            
+            // Verificar el formato del ID
+            if (!deviceId.match(/^[A-Za-z0-9]+$/)) {
+                showDeviceFormError('El ID del dispositivo solo debe contener letras y números.');
+                return;
+            }
+            
+            // Deshabilitar el botón y mostrar indicador de carga
+            saveNewDeviceBtn.disabled = true;
+            saveNewDeviceBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creando...';
+            
+            // Datos para enviar al servidor
+            const deviceData = {
+                deviceId: deviceId,
+                name: deviceName,
+                type: deviceType,
+                status: 'offline', // Estado inicial
+                batteryLevel: 100, // Nivel de batería inicial
+                ipAddress: null    // Sin dirección IP inicial
+            };
+            
+            // Enviar datos al servidor
+            fetch('/api/devices', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(deviceData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.message || 'Error al crear el dispositivo'); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Mostrar mensaje de éxito
+                showDeviceFormSuccess(`Dispositivo "${deviceName}" creado con éxito. El dispositivo ha sido registrado con ID: ${deviceId}`);
+                
+                // Registrar suscripción MQTT
+                return fetch('/api/mqtt/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ topic: `${deviceId}/pub` })
+                });
+            })
+            .then(() => {
+                // Actualizar la lista de dispositivos después de un breve retraso
+                setTimeout(() => {
+                    // Refrescar datos
+                    fetch('/api/devices')
+                        .then(response => response.json())
+                        .then(devices => {
+                            // Actualizar la lista global de dispositivos
+                            window.devices = devices;
+                            // Actualizar la UI
+                            window.updateDeviceList();
+                        });
+                    
+                    // Limpiar el formulario
+                    document.getElementById('newDeviceForm').reset();
+                    
+                    // Habilitar el botón
+                    saveNewDeviceBtn.disabled = false;
+                    saveNewDeviceBtn.innerHTML = 'Crear Dispositivo';
+                    
+                    // Cerrar el modal después de 3 segundos si la operación fue exitosa
+                    setTimeout(() => {
+                        hideDeviceFormMessages();
+                        const createDeviceModal = bootstrap.Modal.getInstance(document.getElementById('createDeviceModal'));
+                        if (createDeviceModal) {
+                            createDeviceModal.hide();
+                        }
+                    }, 3000);
+                }, 1000);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showDeviceFormError(error.message || 'Error al crear el dispositivo');
+                
+                // Habilitar el botón
+                saveNewDeviceBtn.disabled = false;
+                saveNewDeviceBtn.innerHTML = 'Crear Dispositivo';
+            });
+        });
+    }
+    
+    // Funciones auxiliares para manejar mensajes de formulario
+    function showDeviceFormError(message) {
+        const errorElem = document.getElementById('deviceFormError');
+        const successElem = document.getElementById('deviceFormSuccess');
+        
+        errorElem.textContent = message;
+        errorElem.classList.remove('d-none');
+        successElem.classList.add('d-none');
+    }
+    
+    function showDeviceFormSuccess(message) {
+        const errorElem = document.getElementById('deviceFormError');
+        const successElem = document.getElementById('deviceFormSuccess');
+        
+        successElem.textContent = message;
+        successElem.classList.remove('d-none');
+        errorElem.classList.add('d-none');
+    }
+    
+    function hideDeviceFormMessages() {
+        const errorElem = document.getElementById('deviceFormError');
+        const successElem = document.getElementById('deviceFormSuccess');
+        
+        errorElem.classList.add('d-none');
+        successElem.classList.add('d-none');
+    }
+    
+    // Limpiar mensajes cuando se abre el modal
+    document.getElementById('createDeviceModal').addEventListener('show.bs.modal', function () {
+        hideDeviceFormMessages();
+        document.getElementById('newDeviceForm').reset();
+    });
     
     // Mostrar modal con detalles del dispositivo
     window.showDeviceDetails = function(deviceId) {
