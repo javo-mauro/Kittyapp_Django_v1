@@ -660,10 +660,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/pets/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Obtener la mascota
       const pet = await storage.getPet(id);
       
       if (!pet) {
         return res.status(404).json({ message: 'Mascota no encontrada' });
+      }
+      
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin' || userId === 1;
+      
+      // Si no es admin, verificar que la mascota pertenezca al usuario
+      if (!isAdmin && userId !== pet.ownerId) {
+        return res.status(403).json({ 
+          message: 'No tienes permiso para ver esta mascota' 
+        });
       }
       
       res.json(pet);
@@ -791,8 +805,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/pets/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
       const petData = req.body;
       console.log("Datos de actualización de mascota recibidos:", petData);
+      
+      // Verificar si el usuario tiene permisos para actualizar esta mascota
+      const existingPet = await storage.getPet(id);
+      if (!existingPet) {
+        return res.status(404).json({ message: 'Mascota no encontrada' });
+      }
+      
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin' || userId === 1;
+      
+      // Verificar que la mascota pertenezca al usuario o que sea administrador
+      if (!isAdmin && userId !== existingPet.ownerId) {
+        return res.status(403).json({ 
+          message: 'No tienes permiso para modificar esta mascota' 
+        });
+      }
       
       // Función para procesar las fechas
       const processDate = (dateString: string | Date | null | undefined): Date | null => {
@@ -902,10 +934,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/pets/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Obtener la mascota antes de eliminarla para verificar permisos
+      const pet = await storage.getPet(id);
+      if (!pet) {
+        return res.status(404).json({ message: 'Mascota no encontrada' });
+      }
+      
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin' || userId === 1;
+      
+      // Si no es admin, verificar que la mascota pertenezca al usuario
+      if (!isAdmin && userId !== pet.ownerId) {
+        return res.status(403).json({ 
+          message: 'No tienes permiso para eliminar esta mascota' 
+        });
+      }
+      
+      // Eliminar la mascota
       const result = await storage.deletePet(id);
       
       if (!result) {
-        return res.status(404).json({ message: 'Mascota no encontrada' });
+        return res.status(404).json({ message: 'Error al eliminar la mascota' });
       }
       
       res.json({ message: 'Mascota eliminada con éxito' });
@@ -918,10 +970,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/devices/:deviceId/pet', async (req: Request, res: Response) => {
     try {
       const deviceId = req.params.deviceId;
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Obtener la mascota por ID de dispositivo
       const pet = await storage.getPetByKittyPawDeviceId(deviceId);
       
       if (!pet) {
         return res.status(404).json({ message: 'No se encontró mascota asociada a este dispositivo' });
+      }
+      
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin' || userId === 1;
+      
+      // Si no es admin, verificar que la mascota pertenezca al usuario
+      if (!isAdmin && userId !== pet.ownerId) {
+        return res.status(403).json({ 
+          message: 'No tienes permiso para ver esta mascota' 
+        });
       }
       
       res.json(pet);

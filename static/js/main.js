@@ -24,14 +24,20 @@ const deviceNames = {
 
 // Inicialización al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
-  // Configurar selectores y botones
-  setupEventListeners();
-  
-  // Conectar a WebSocket
-  connectWebSocket();
-  
-  // Inicializar gráficos
-  initCharts();
+  // Obtener información del usuario actual
+  fetchCurrentUser().then(() => {
+    // Configurar selectores y botones
+    setupEventListeners();
+    
+    // Conectar a WebSocket
+    connectWebSocket();
+    
+    // Inicializar gráficos
+    initCharts();
+    
+    // Cargar dispositivos y datos de sensores
+    loadInitialData();
+  });
 });
 
 // Configura los listeners de eventos
@@ -557,4 +563,184 @@ function getDeviceColor(deviceId) {
   };
   
   return colors[deviceId] || '#8C54FF';
+}
+
+// Obtiene la información del usuario actual
+async function fetchCurrentUser() {
+  try {
+    // Utilizar parámetro de url si está disponible, para propósitos de desarrollo
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlUserId = urlParams.get('userId');
+    
+    const response = await fetch('/api/user/current' + (urlUserId ? `?userId=${urlUserId}` : ''));
+    
+    if (response.ok) {
+      currentUser = await response.json();
+      console.log('Usuario actual:', currentUser);
+      
+      // Actualizar información de usuario en la interfaz
+      updateUserInfo();
+      
+      return currentUser;
+    } else {
+      console.error('Error al obtener el usuario actual:', response.status);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al obtener el usuario:', error);
+    return null;
+  }
+}
+
+// Carga los datos iniciales (dispositivos, mascotas, etc.)
+async function loadInitialData() {
+  if (!currentUser) {
+    console.warn('No hay usuario autenticado, no se pueden cargar datos');
+    return;
+  }
+  
+  try {
+    // Cargar dispositivos con parámetros de usuario
+    const userId = currentUser.id;
+    const userRole = currentUser.role;
+    
+    // Cargar dispositivos
+    const devicesResponse = await fetch(`/api/devices?userId=${userId}&role=${userRole}`);
+    if (devicesResponse.ok) {
+      devices = await devicesResponse.json();
+      updateDeviceList();
+    }
+    
+    // Si estamos en la página de mascotas, cargar datos de mascotas
+    const petsContainer = document.getElementById('petsList');
+    if (petsContainer) {
+      const petsResponse = await fetch(`/api/pets?userId=${userId}&role=${userRole}`);
+      if (petsResponse.ok) {
+        const pets = await petsResponse.json();
+        updatePetsList(pets);
+      }
+    }
+    
+    // Cargar datos de sensores para cada dispositivo
+    for (const device of devices) {
+      const deviceId = device.device_id;
+      const sensorDataResponse = await fetch(`/api/sensor-data/${deviceId}`);
+      
+      if (sensorDataResponse.ok) {
+        const sensorData = await sensorDataResponse.json();
+        processSensorData(deviceId, sensorData);
+      }
+    }
+    
+    // Actualizar gráficos
+    updateCharts();
+    
+  } catch (error) {
+    console.error('Error al cargar datos iniciales:', error);
+  }
+}
+
+// Actualiza la información del usuario en la interfaz
+function updateUserInfo() {
+  // Actualizar nombre del usuario en el navbar
+  const userNameElement = document.querySelector('.navbar-nav .text-light');
+  if (userNameElement && currentUser) {
+    userNameElement.textContent = currentUser.name || currentUser.username;
+  }
+}
+
+// Procesa los datos de sensores recibidos de la API
+function processSensorData(deviceId, data) {
+  if (!sensorData[deviceId]) {
+    sensorData[deviceId] = {};
+  }
+  
+  // Agrupar datos por tipo de sensor
+  for (const reading of data) {
+    const sensorType = reading.sensor_type;
+    
+    if (!sensorData[deviceId][sensorType]) {
+      sensorData[deviceId][sensorType] = [];
+    }
+    
+    // Convertir datos a formato compatible
+    sensorData[deviceId][sensorType].push({
+      value: reading.data.value,
+      unit: reading.data.unit || getSensorUnit(sensorType),
+      timestamp: reading.timestamp
+    });
+  }
+  
+  // Ordenar por timestamp
+  for (const sensorType in sensorData[deviceId]) {
+    sensorData[deviceId][sensorType].sort((a, b) => 
+      new Date(a.timestamp) - new Date(b.timestamp)
+    );
+    
+    // Limitar a las últimas 60 lecturas
+    if (sensorData[deviceId][sensorType].length > 60) {
+      sensorData[deviceId][sensorType] = sensorData[deviceId][sensorType].slice(-60);
+    }
+  }
+}
+
+// Actualiza la lista de mascotas (para la página de mascotas)
+function updatePetsList(pets) {
+  const petsList = document.getElementById('petsList');
+  if (!petsList) return;
+  
+  petsList.innerHTML = '';
+  
+  if (pets.length === 0) {
+    petsList.innerHTML = '<div class="col-12"><p class="text-center">No tienes mascotas registradas.</p></div>';
+    return;
+  }
+  
+  // Crear tarjetas para cada mascota
+  pets.forEach(pet => {
+    const petCard = document.createElement('div');
+    petCard.className = 'col-md-6 col-lg-4 mb-4';
+    
+    // Si el dispositivo está conectado, mostrar status
+    let deviceStatus = '';
+    if (pet.kittyPawDeviceId) {
+      const device = devices.find(d => d.device_id === pet.kittyPawDeviceId);
+      if (device) {
+        const status = device.status || 'unknown';
+        deviceStatus = `
+          <p class="mb-2">
+            <span class="device-status-${status.toLowerCase()}">
+              <i class="bi ${status === 'online' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
+              Dispositivo ${status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>
+          </p>
+        `;
+      }
+    }
+    
+    petCard.innerHTML = `
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">${pet.name}</h5>
+          <p class="card-text">
+            <small class="text-muted">Especie: ${pet.species}</small>
+          </p>
+          <p class="card-text">
+            <small class="text-muted">Raza: ${pet.breed}</small>
+          </p>
+          ${deviceStatus}
+          <p class="card-text">
+            <small class="text-muted">ID Chip: ${pet.chipNumber}</small>
+          </p>
+        </div>
+        <div class="card-footer">
+          <a href="/pets/${pet.id}/" class="btn btn-sm btn-primary">
+            Ver detalles
+          </a>
+        </div>
+      </div>
+    `;
+    
+    petsList.appendChild(petCard);
+  });
 }
