@@ -623,8 +623,8 @@ async function loadInitialData() {
     
     // Cargar datos de sensores para cada dispositivo
     for (const device of devices) {
-      const deviceId = device.device_id;
-      const sensorDataResponse = await fetch(`/api/sensor-data/${deviceId}`);
+      const deviceId = device.deviceId;
+      const sensorDataResponse = await fetch(`/api/sensor-data/${deviceId}?userId=${userId}&role=${userRole}`);
       
       if (sensorDataResponse.ok) {
         const sensorData = await sensorDataResponse.json();
