@@ -6,6 +6,7 @@ let devices = [];
 let sensorData = {};
 let selectedDevice = 'all';
 let charts = {};
+let currentUser = null; // Almacena la información del usuario actual
 
 // Colores para gráficos
 const chartColors = {

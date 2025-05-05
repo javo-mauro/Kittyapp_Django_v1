@@ -140,14 +140,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/users', async (req: Request, res: Response) => {
     try {
-      // Obtener todos los usuarios del sistema desde el storage
-      // Ahora solo mostramos a Javier Dayne como administrador
-      const users = [
-        { id: 1, username: 'admin', name: 'Javier Dayne', role: 'admin', lastLogin: new Date().toISOString() },
-        { id: 2, username: 'jdayne', name: 'Javier Dayne', role: 'owner', lastLogin: new Date().toISOString() },
-      ];
+      // Obtener el rol del usuario desde los parámetros de consulta o el usuario actual
+      const userRole = req.query.role as string;
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
       
-      res.json(users);
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin' || userId === 1; // Admin tiene userId = 1
+      
+      // Si el usuario no es administrador, solo devuelve su propio perfil
+      if (!isAdmin && userId) {
+        // Buscar el usuario específico
+        const userInfo = { id: userId };
+        
+        // Buscar si es un propietario de mascotas
+        const petOwner = await storage.getPetOwner(userId);
+        
+        if (petOwner) {
+          // Combinar información para crear perfil
+          const ownerProfile = {
+            id: petOwner.id,
+            username: petOwner.username,
+            name: `${petOwner.name} ${petOwner.paternalLastName}`,
+            role: 'owner',
+            lastLogin: new Date().toISOString()
+          };
+          
+          return res.json([ownerProfile]);
+        }
+        
+        // Si no se encuentra, devolver array vacío
+        return res.json([]);
+      }
+      
+      // Para administradores, devolver lista completa de usuarios
+      if (isAdmin) {
+        const admin = { 
+          id: 1, 
+          username: 'admin', 
+          name: 'Javier Dayne', 
+          role: 'admin', 
+          lastLogin: new Date().toISOString() 
+        };
+        
+        // Obtener todos los propietarios de mascotas
+        const petOwners = await storage.getPetOwners();
+        const ownerProfiles = petOwners.map(owner => ({
+          id: owner.id,
+          username: owner.username,
+          name: `${owner.name} ${owner.paternalLastName}`,
+          role: 'owner',
+          lastLogin: owner.updatedAt.toISOString()
+        }));
+        
+        // Combinamos admin con propietarios
+        const allUsers = [admin, ...ownerProfiles];
+        
+        res.json(allUsers);
+      } else {
+        // Si no hay userId ni es admin, devolver array vacío por seguridad
+        res.json([]);
+      }
     } catch (error) {
       console.error('Error getting users:', error);
       res.status(500).json({ message: 'Error al obtener los usuarios del sistema' });
@@ -579,8 +631,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pet endpoints
   app.get('/api/pets', async (req: Request, res: Response) => {
     try {
-      const pets = await storage.getPets();
-      res.json(pets);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin' || userId === 1; // Admin tiene userId = 1
+      
+      // Si es admin, devolver todas las mascotas
+      if (isAdmin) {
+        const pets = await storage.getPets();
+        return res.json(pets);
+      }
+      
+      // Si es un usuario normal, solo devolver sus mascotas
+      if (userId) {
+        const userPets = await storage.getPetsByOwnerId(userId);
+        return res.json(userPets);
+      }
+      
+      // Si no hay información de usuario, no devolver mascotas
+      res.json([]);
     } catch (error) {
       console.error('Error fetching pets:', error);
       res.status(500).json({ message: 'Error al obtener las mascotas' });
