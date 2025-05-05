@@ -19,7 +19,8 @@ const chartColors = {
 // Nombres de dispositivos
 const deviceNames = {
   'KPCL0021': 'Collar de Malto',
-  'KPCL0022': 'Placa de Canela'
+  'KPCL0022': 'Placa de Canela',
+  'KPCL0025': 'Collar de Firulais'
 };
 
 // Inicialización al cargar la página
@@ -363,14 +364,29 @@ function updateCharts() {
     let combinedData = [];
     let datasets = [];
     
-    // Obtener solo los IDs de dispositivos autorizados para este usuario
-    const authorizedDeviceIds = devices.map(d => d.deviceId);
+    // Limpiar datos de dispositivos que no pertenecen al usuario actual
+    // El admin tiene acceso a todos los dispositivos
+    const isAdmin = currentUser && currentUser.role === 'admin';
+    
+    // Para usuarios no admin, solo mostramos dispositivos autorizados
+    // Obtener los IDs de los dispositivos autorizados para este usuario
+    const authorizedDeviceIds = devices.map(d => d.deviceId || d.device_id);
+    
+    // Limpiar los datos de sensorData para solo mantener dispositivos autorizados
+    if (!isAdmin) {
+      // Para cada dispositivo en sensorData, verificar si está autorizado
+      for (const deviceId in sensorData) {
+        if (!authorizedDeviceIds.includes(deviceId)) {
+          // Si no está autorizado, eliminar de sensorData
+          delete sensorData[deviceId];
+        }
+      }
+    }
     
     if (selectedDevice === 'all') {
-      // Mostrar datos solo de los dispositivos autorizados
+      // Mostrar datos de todos los dispositivos permitidos para el usuario
       for (const deviceId in sensorData) {
-        // Verificar si este dispositivo está autorizado para este usuario
-        if (authorizedDeviceIds.includes(deviceId) && sensorData[deviceId][sensorType]) {
+        if (sensorData[deviceId] && sensorData[deviceId][sensorType]) {
           const deviceName = deviceNames[deviceId] || deviceId;
           const color = getDeviceColor(deviceId);
           
@@ -391,8 +407,8 @@ function updateCharts() {
         }
       }
     } else {
-      // Verificar si el dispositivo seleccionado está autorizado
-      if (authorizedDeviceIds.includes(selectedDevice) && 
+      // Si es admin o si el dispositivo está autorizado para el usuario
+      if ((isAdmin || authorizedDeviceIds.includes(selectedDevice)) && 
           sensorData[selectedDevice] && 
           sensorData[selectedDevice][sensorType]) {
         
@@ -566,7 +582,8 @@ function getSensorUnit(sensorType) {
 function getDeviceColor(deviceId) {
   const colors = {
     'KPCL0021': '#FF5F6D',
-    'KPCL0022': '#38B6FF'
+    'KPCL0022': '#38B6FF',
+    'KPCL0025': '#50C878'  // Verde esmeralda para el collar de Firulais
   };
   
   return colors[deviceId] || '#8C54FF';
@@ -607,15 +624,23 @@ async function loadInitialData() {
   }
   
   try {
+    // Limpiar los datos existentes
+    sensorData = {};
+    devices = [];
+    
     // Cargar dispositivos con parámetros de usuario
     const userId = currentUser.id;
     const userRole = currentUser.role;
+    console.log(`Cargando datos para usuario: ${userId}, rol: ${userRole}`);
     
     // Cargar dispositivos
     const devicesResponse = await fetch(`/api/devices?userId=${userId}&role=${userRole}`);
     if (devicesResponse.ok) {
       devices = await devicesResponse.json();
+      console.log('Dispositivos autorizados:', devices.map(d => d.device_id || d.deviceId));
       updateDeviceList();
+    } else {
+      console.error('Error al cargar dispositivos:', devicesResponse.status);
     }
     
     // Si estamos en la página de mascotas, cargar datos de mascotas
@@ -630,12 +655,17 @@ async function loadInitialData() {
     
     // Cargar datos de sensores para cada dispositivo
     for (const device of devices) {
-      const deviceId = device.deviceId;
+      const deviceId = device.device_id || device.deviceId;
+      if (!deviceId) continue;
+      
+      console.log(`Cargando datos de sensor para dispositivo: ${deviceId}`);
       const sensorDataResponse = await fetch(`/api/sensor-data/${deviceId}?userId=${userId}&role=${userRole}`);
       
       if (sensorDataResponse.ok) {
-        const sensorData = await sensorDataResponse.json();
-        processSensorData(deviceId, sensorData);
+        const sensorDataResult = await sensorDataResponse.json();
+        processSensorData(deviceId, sensorDataResult);
+      } else {
+        console.error(`Error al cargar datos del sensor para ${deviceId}:`, sensorDataResponse.status);
       }
     }
     
