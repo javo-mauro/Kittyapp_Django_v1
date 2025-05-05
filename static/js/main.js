@@ -370,7 +370,7 @@ function updateCharts() {
     
     // Para usuarios no admin, solo mostramos dispositivos autorizados
     // Obtener los IDs de los dispositivos autorizados para este usuario
-    const authorizedDeviceIds = devices.map(d => d.deviceId || d.device_id);
+    const authorizedDeviceIds = devices.map(d => d.deviceId || d.device_id).filter(id => id);
     
     // Limpiar los datos de sensorData para solo mantener dispositivos autorizados
     if (!isAdmin) {
@@ -428,9 +428,31 @@ function updateCharts() {
     
     // Actualizar gráfico
     if (charts[sensorType]) {
-      charts[sensorType].data.labels = combinedData.map(d => formatTimestamp(d.timestamp));
-      charts[sensorType].data.datasets = datasets;
-      charts[sensorType].update('none'); // Sin animación
+      // Verificar que existan datos para actualizar el gráfico
+      if (combinedData && combinedData.length > 0) {
+        charts[sensorType].data.labels = combinedData.map(d => formatTimestamp(d.timestamp));
+      } else {
+        // Si no hay datos, usar etiquetas vacías
+        charts[sensorType].data.labels = [];
+      }
+      
+      // Actualizar los datasets (conjuntos de datos)
+      charts[sensorType].data.datasets = datasets || [];
+      
+      // Actualizar el gráfico sin animación para mejor rendimiento
+      try {
+        charts[sensorType].update('none');
+      } catch (error) {
+        console.error(`Error al actualizar gráfico ${sensorType}:`, error);
+        
+        // Intentar reiniciar el gráfico si hay un error
+        try {
+          charts[sensorType].destroy();
+          initCharts();
+        } catch (e) {
+          console.error('No se pudo reiniciar el gráfico:', e);
+        }
+      }
     }
   }
   
@@ -659,13 +681,21 @@ async function loadInitialData() {
       if (!deviceId) continue;
       
       console.log(`Cargando datos de sensor para dispositivo: ${deviceId}`);
-      const sensorDataResponse = await fetch(`/api/sensor-data/${deviceId}?userId=${userId}&role=${userRole}`);
-      
-      if (sensorDataResponse.ok) {
-        const sensorDataResult = await sensorDataResponse.json();
-        processSensorData(deviceId, sensorDataResult);
-      } else {
-        console.error(`Error al cargar datos del sensor para ${deviceId}:`, sensorDataResponse.status);
+      try {
+        const sensorDataResponse = await fetch(`/api/sensor-data/${deviceId}?userId=${userId}&role=${userRole}`);
+        
+        if (sensorDataResponse.ok) {
+          const sensorDataResult = await sensorDataResponse.json();
+          if (Array.isArray(sensorDataResult)) {
+            processSensorData(deviceId, sensorDataResult);
+          } else {
+            console.warn(`Formato de datos incorrecto para ${deviceId}:`, sensorDataResult);
+          }
+        } else {
+          console.error(`Error al cargar datos del sensor para ${deviceId}:`, sensorDataResponse.status);
+        }
+      } catch (error) {
+        console.error(`Excepción al cargar datos del sensor para ${deviceId}:`, error);
       }
     }
     
@@ -688,35 +718,62 @@ function updateUserInfo() {
 
 // Procesa los datos de sensores recibidos de la API
 function processSensorData(deviceId, data) {
+  if (!deviceId || !Array.isArray(data)) {
+    console.warn("Datos de sensor inválidos:", deviceId, data);
+    return;
+  }
+  
   if (!sensorData[deviceId]) {
     sensorData[deviceId] = {};
   }
   
   // Agrupar datos por tipo de sensor
   for (const reading of data) {
-    const sensorType = reading.sensor_type;
-    
-    if (!sensorData[deviceId][sensorType]) {
-      sensorData[deviceId][sensorType] = [];
+    try {
+      // Verificar que la lectura tiene el formato esperado
+      if (!reading || !reading.sensor_type || !reading.data) {
+        console.warn(`Lectura inválida para dispositivo ${deviceId}:`, reading);
+        continue;
+      }
+      
+      const sensorType = reading.sensor_type;
+      
+      if (!sensorData[deviceId][sensorType]) {
+        sensorData[deviceId][sensorType] = [];
+      }
+      
+      // Convertir datos a formato compatible, con validación
+      const value = parseFloat(reading.data.value);
+      if (isNaN(value)) {
+        console.warn(`Valor no numérico para sensor ${sensorType}:`, reading.data.value);
+        continue;
+      }
+      
+      sensorData[deviceId][sensorType].push({
+        value: value,
+        unit: reading.data.unit || getSensorUnit(sensorType),
+        timestamp: reading.timestamp || new Date().toISOString()
+      });
+    } catch (error) {
+      console.error(`Error al procesar lectura para dispositivo ${deviceId}:`, error);
     }
-    
-    // Convertir datos a formato compatible
-    sensorData[deviceId][sensorType].push({
-      value: reading.data.value,
-      unit: reading.data.unit || getSensorUnit(sensorType),
-      timestamp: reading.timestamp
-    });
   }
   
   // Ordenar por timestamp
   for (const sensorType in sensorData[deviceId]) {
-    sensorData[deviceId][sensorType].sort((a, b) => 
-      new Date(a.timestamp) - new Date(b.timestamp)
-    );
-    
-    // Limitar a las últimas 60 lecturas
-    if (sensorData[deviceId][sensorType].length > 60) {
-      sensorData[deviceId][sensorType] = sensorData[deviceId][sensorType].slice(-60);
+    try {
+      sensorData[deviceId][sensorType].sort((a, b) => {
+        const dateA = new Date(a.timestamp || 0);
+        const dateB = new Date(b.timestamp || 0);
+        return dateA - dateB;
+      });
+      
+      // Limitar a las últimas 60 lecturas
+      if (sensorData[deviceId][sensorType].length > 60) {
+        sensorData[deviceId][sensorType] = sensorData[deviceId][sensorType].slice(-60);
+      }
+    } catch (error) {
+      console.error(`Error al ordenar datos del sensor ${sensorType}:`, error);
     }
   }
 }
