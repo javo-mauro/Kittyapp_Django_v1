@@ -672,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar si el usuario tiene privilegios de administrador
-      const isAdmin = userRole === 'admin' || userId === 1;
+      const isAdmin = userRole === 'admin';
       
       // Si no es admin, verificar que la mascota pertenezca al usuario
       if (!isAdmin && userId !== pet.ownerId) {
@@ -818,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar si el usuario tiene privilegios de administrador
-      const isAdmin = userRole === 'admin' || userId === 1;
+      const isAdmin = userRole === 'admin';
       
       // Verificar que la mascota pertenezca al usuario o que sea administrador
       if (!isAdmin && userId !== existingPet.ownerId) {
@@ -945,7 +945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar si el usuario tiene privilegios de administrador
-      const isAdmin = userRole === 'admin' || userId === 1;
+      const isAdmin = userRole === 'admin';
       
       // Si no es admin, verificar que la mascota pertenezca al usuario
       if (!isAdmin && userId !== pet.ownerId) {
@@ -982,7 +982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar si el usuario tiene privilegios de administrador
-      const isAdmin = userRole === 'admin' || userId === 1;
+      const isAdmin = userRole === 'admin';
       
       // Si no es admin, verificar que la mascota pertenezca al usuario
       if (!isAdmin && userId !== pet.ownerId) {
