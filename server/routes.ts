@@ -320,9 +320,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (username === 'admin' || userRole === 'admin') {
         filteredDevices = allDevices; // El admin ve todos los dispositivos
       }
-      // Para usuario "jdayne" asegurar que vea ambos dispositivos
-      else if (username === 'jdayne' || userId === 2) {
-        filteredDevices = allDevices;
+      // Verificar si el usuario es propietario de ambos dispositivos
+      else if (username === 'jdayne' || userRole === 'owner') {
+        // Obtener las mascotas del usuario
+        const ownerPets = await storage.getPetsByOwnerId(userId);
+        
+        // Verificar si el usuario tiene todas las mascotas
+        const totalPets = await storage.getPets();
+        const hasAllPets = ownerPets.length === totalPets.length;
+        
+        // Si tiene todas las mascotas, mostrar todos los dispositivos
+        if (hasAllPets) {
+          filteredDevices = allDevices;
+        } else {
+          // Si no tiene todas las mascotas, filtrar por las que tenga
+          filteredDevices = await filterDevicesByUserPets(userId);
+        }
       }
       // Para otros usuarios, filtrar según las mascotas que tengan asociadas
       else if (userId) {
@@ -691,6 +704,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/pet-owners/:ownerId/pets', async (req: Request, res: Response) => {
     try {
       const ownerId = parseInt(req.params.ownerId);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin';
+      
+      // Si no es admin, verificar que esté solicitando sus propias mascotas
+      if (!isAdmin && userId !== ownerId) {
+        return res.status(403).json({ 
+          message: 'No tienes permiso para ver las mascotas de otro usuario' 
+        });
+      }
+      
       const pets = await storage.getPetsByOwnerId(ownerId);
       res.json(pets);
     } catch (error) {
@@ -1043,6 +1069,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }, 60000);
 
   return httpServer;
+}
+
+/**
+ * Filtra dispositivos basándose en las mascotas asociadas a un usuario específico
+ */
+async function filterDevicesByUserPets(userId: number) {
+  // Obtener las mascotas del usuario
+  const ownerPets = await storage.getPetsByOwnerId(userId);
+  
+  // Obtener todos los dispositivos
+  const allDevices = await storage.getDevices();
+  
+  // Extraer los IDs de los dispositivos asociados a las mascotas
+  const petDeviceIds = ownerPets
+    .filter(pet => pet.kittyPawDeviceId)
+    .map(pet => pet.kittyPawDeviceId);
+  
+  // Filtrar los dispositivos que corresponden a las mascotas del usuario
+  return allDevices.filter(device => 
+    petDeviceIds.includes(device.deviceId)
+  );
 }
 
 async function sendInitialData(ws: WebSocket) {
