@@ -453,9 +453,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/pet-owners', async (req: Request, res: Response) => {
     try {
-      const owner = req.body;
-      console.log("Datos recibidos del cliente:", owner);
-      const newOwner = await storage.createPetOwner(owner);
+      const ownerData = req.body;
+      console.log("Datos recibidos del cliente:", ownerData);
+      
+      // Formatear la dirección completa
+      const address = [
+        ownerData.street || "",
+        ownerData.number || "",
+        ownerData.city || "",
+        ownerData.district || "",
+        ownerData.addressDetails || ""
+      ].filter(Boolean).join(", ");
+      
+      // Procesar la fecha de nacimiento
+      let birthDate: Date;
+      try {
+        // Si se proporciona como cadena, intentar convertir a Date
+        if (typeof ownerData.birthDate === 'string') {
+          // Para formatos como "DD/MM/YYYY"
+          if (ownerData.birthDate.includes('/')) {
+            const parts = ownerData.birthDate.split('/');
+            birthDate = new Date(
+              parseInt(parts[2]), // año
+              parseInt(parts[1]) - 1, // mes (0-11)
+              parseInt(parts[0]) // día
+            );
+          } else {
+            // Intentar analizar como fecha ISO o similar
+            birthDate = new Date(ownerData.birthDate);
+          }
+        } else {
+          // Si ya es un objeto Date, usarlo directamente
+          birthDate = new Date(ownerData.birthDate);
+        }
+        
+        // Verificar si la fecha es válida
+        if (isNaN(birthDate.getTime())) {
+          throw new Error("Fecha de nacimiento inválida");
+        }
+      } catch (err) {
+        console.error("Error procesando fecha:", err);
+        // Usar una fecha por defecto en caso de error
+        birthDate = new Date();
+      }
+      
+      // Preparar datos para crear el dueño
+      const ownerToCreate = {
+        name: ownerData.name,
+        paternalLastName: ownerData.paternalLastName,
+        maternalLastName: ownerData.maternalLastName || null,
+        address: address,
+        birthDate: birthDate,
+        email: ownerData.email,
+        username: ownerData.username,
+        password: ownerData.password
+      };
+      
+      const newOwner = await storage.createPetOwner(ownerToCreate);
       console.log("Nuevo dueño creado:", newOwner);
       
       // Asegurarse de que estamos enviando los encabezados correctos
