@@ -299,65 +299,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/devices', async (req: Request, res: Response) => {
     try {
-      // Verificar si se solicitan dispositivos para un usuario específico
+      // Obtener parámetros de usuario
       const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
-      const username = req.query.username as string || null;
+      const userRole = req.query.role as string;
       
       // Obtener todos los dispositivos
       const allDevices = await storage.getDevices();
       
-      // Si no hay filtro, devolver todos los dispositivos (sólo para admin)
-      if (!userId && !username) {
-        res.json(allDevices);
-        return;
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin';
+      
+      // Si es admin, devolver todos los dispositivos
+      if (isAdmin) {
+        return res.json(allDevices);
       }
       
-      // Filtrar dispositivos según el usuario
-      let filteredDevices = allDevices;
-      
-      // Solo admin ve todos los dispositivos
-      const userRole = req.query.role as string;
-      if (username === 'admin' || userRole === 'admin') {
-        filteredDevices = allDevices; // El admin ve todos los dispositivos
-      }
-      // Verificar si el usuario es propietario de ambos dispositivos
-      else if (username === 'jdayne' || userRole === 'owner') {
-        // Obtener las mascotas del usuario
-        const ownerPets = await storage.getPetsByOwnerId(userId);
-        
-        // Verificar si el usuario tiene todas las mascotas
-        const totalPets = await storage.getPets();
-        const hasAllPets = ownerPets.length === totalPets.length;
-        
-        // Si tiene todas las mascotas, mostrar todos los dispositivos
-        if (hasAllPets) {
-          filteredDevices = allDevices;
-        } else {
-          // Si no tiene todas las mascotas, filtrar por las que tenga
-          filteredDevices = await filterDevicesByUserPets(userId);
-        }
-      }
-      // Para otros usuarios, filtrar según las mascotas que tengan asociadas
-      else if (userId) {
-        // Obtener las mascotas del usuario
-        const ownerPets = await storage.getPetsByOwnerId(userId);
-        
-        // Filtrar dispositivos que estén asociados con las mascotas del propietario
-        if (ownerPets.length > 0) {
-          const petDeviceIds = ownerPets
-            .filter(pet => pet.kittyPawDeviceId)
-            .map(pet => pet.kittyPawDeviceId);
-          
-          filteredDevices = allDevices.filter(device => 
-            petDeviceIds.includes(device.deviceId)
-          );
-        } else {
-          // Si el propietario no tiene mascotas, no mostrar dispositivos
-          filteredDevices = [];
-        }
+      // Si es un usuario normal, filtrar dispositivos según sus mascotas
+      if (userId) {
+        // Obtener dispositivos filtrados por mascotas del usuario
+        const filteredDevices = await filterDevicesByUserPets(userId);
+        return res.json(filteredDevices);
       }
       
-      res.json(filteredDevices);
+      // Si no hay información de usuario, no devolver dispositivos (por seguridad)
+      res.json([]);
     } catch (error) {
       console.error('Error fetching devices:', error);
       res.status(500).json({ message: 'Error retrieving devices' });
@@ -421,34 +386,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/sensor-data/:deviceId', async (req: Request, res: Response) => {
-    const { deviceId } = req.params;
-    const { type, limit } = req.query;
-    
-    let data;
-    if (type) {
-      data = await storage.getSensorDataByType(
-        deviceId, 
-        type as string, 
-        limit ? parseInt(limit as string) : undefined
-      );
-    } else {
-      data = await storage.getSensorData(
-        deviceId, 
-        limit ? parseInt(limit as string) : undefined
-      );
+    try {
+      const { deviceId } = req.params;
+      const { type, limit } = req.query;
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Verificar si el usuario tiene acceso a este dispositivo
+      const isAdmin = userRole === 'admin';
+      
+      // Si no es admin, verificar que el dispositivo pertenezca al usuario
+      if (!isAdmin && userId) {
+        const userDevices = await filterDevicesByUserPets(userId);
+        const deviceAllowed = userDevices.some(device => device.deviceId === deviceId);
+        
+        if (!deviceAllowed) {
+          return res.status(403).json({ 
+            message: 'No tienes permiso para ver datos de este dispositivo' 
+          });
+        }
+      }
+      
+      // Obtener los datos del sensor
+      let data;
+      if (type) {
+        data = await storage.getSensorDataByType(
+          deviceId, 
+          type as string, 
+          limit ? parseInt(limit as string) : undefined
+        );
+      } else {
+        data = await storage.getSensorData(
+          deviceId, 
+          limit ? parseInt(limit as string) : undefined
+        );
+      }
+      
+      res.json(data);
+    } catch (error) {
+      console.error('Error fetching sensor data:', error);
+      res.status(500).json({ message: 'Error al obtener datos del sensor' });
     }
-    
-    res.json(data);
   });
 
   app.get('/api/latest-readings', async (req: Request, res: Response) => {
-    const readings = await storage.getLatestReadings();
-    res.json(readings);
+    try {
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin';
+      
+      // Obtener todas las lecturas
+      const allReadings = await storage.getLatestReadings();
+      
+      // Si es admin, devolver todas las lecturas
+      if (isAdmin) {
+        return res.json(allReadings);
+      }
+      
+      // Si es un usuario normal, filtrar lecturas según sus dispositivos
+      if (userId) {
+        // Obtener dispositivos filtrados por mascotas del usuario
+        const userDevices = await filterDevicesByUserPets(userId);
+        const userDeviceIds = userDevices.map(device => device.deviceId);
+        
+        // Filtrar lecturas que pertenecen a dispositivos del usuario
+        const filteredReadings = allReadings.filter(reading => 
+          userDeviceIds.includes(reading.deviceId)
+        );
+        
+        return res.json(filteredReadings);
+      }
+      
+      // Si no hay información de usuario, no devolver lecturas (por seguridad)
+      res.json([]);
+    } catch (error) {
+      console.error('Error fetching latest readings:', error);
+      res.status(500).json({ message: 'Error al obtener las últimas lecturas' });
+    }
   });
 
   app.get('/api/system/metrics', async (req: Request, res: Response) => {
-    const metrics = await storage.getSystemMetrics();
-    res.json(metrics);
+    try {
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Obtener métricas completas del sistema
+      const allMetrics = await storage.getSystemMetrics();
+      
+      // Si es admin, devolver todas las métricas
+      if (userRole === 'admin') {
+        return res.json(allMetrics);
+      }
+      
+      // Si es un usuario normal, ajustar las métricas según sus dispositivos
+      if (userId) {
+        const userDevices = await filterDevicesByUserPets(userId);
+        
+        // Métricas personalizadas para el usuario
+        const userMetrics = {
+          activeDevices: userDevices.filter(d => d.status === 'online').length,
+          activeSensors: userDevices.length,  // Estimación simplificada
+          alerts: 0,  // Se podría personalizar si hay un sistema de alertas
+          lastUpdate: allMetrics.lastUpdate
+        };
+        
+        return res.json(userMetrics);
+      }
+      
+      // Si no hay información de usuario, devolver métricas genéricas
+      res.json({
+        activeDevices: 0,
+        activeSensors: 0,
+        alerts: 0,
+        lastUpdate: new Date()
+      });
+    } catch (error) {
+      console.error('Error fetching system metrics:', error);
+      res.status(500).json({ message: 'Error al obtener métricas del sistema' });
+    }
   });
 
   app.get('/api/system/info', async (req: Request, res: Response) => {
