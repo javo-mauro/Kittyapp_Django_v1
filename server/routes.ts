@@ -460,7 +460,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/mqtt/status', async (req: Request, res: Response) => {
-    const connection = await storage.getMqttConnectionByUserId(1);
+    const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+    const userRole = req.query.role as string;
+    
+    // Si es admin, obtener la conexión del sistema (ID 1)
+    // Si es usuario normal, obtener su propia conexión
+    const targetUserId = userRole === 'admin' ? 1 : userId;
+    
+    if (!targetUserId) {
+      return res.status(400).json({ message: 'Se requiere ID de usuario' });
+    }
+    
+    const connection = await storage.getMqttConnectionByUserId(targetUserId);
     if (connection) {
       // Don't send password or certificate information in the response
       const { password, caCert, clientCert, privateKey, ...safeConnection } = connection;
@@ -519,8 +530,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pet owner endpoints
   app.get('/api/pet-owners', async (req: Request, res: Response) => {
     try {
-      const owners = await storage.getPetOwners();
-      res.json(owners);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : null;
+      const userRole = req.query.role as string;
+      
+      // Verificar si el usuario tiene privilegios de administrador
+      const isAdmin = userRole === 'admin';
+      
+      // Si es admin, devolver todos los dueños
+      if (isAdmin) {
+        const owners = await storage.getPetOwners();
+        return res.json(owners);
+      }
+      
+      // Si es un usuario normal, solo devolver su información
+      if (userId) {
+        const owner = await storage.getPetOwner(userId);
+        if (owner) {
+          return res.json([owner]);
+        }
+      }
+      
+      // Si no tiene permisos, devolver array vacío
+      res.json([]);
     } catch (error) {
       console.error('Error fetching pet owners:', error);
       res.status(500).json({ message: 'Error al obtener los dueños de mascotas' });
