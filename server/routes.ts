@@ -610,6 +610,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
+      // Verificar y crear el dispositivo si no existe
+      let deviceId = petData.kittyPawDeviceId;
+      if (deviceId) {
+        // Verificar si el dispositivo existe
+        const existingDevice = await storage.getDeviceByDeviceId(deviceId);
+        
+        if (!existingDevice) {
+          // El dispositivo no existe, vamos a crearlo
+          log(`Dispositivo ${deviceId} no encontrado, creando uno nuevo...`, 'express');
+          
+          // Obtener el nombre para el dispositivo del nombre de la mascota
+          const deviceName = `Dispositivo para ${petData.name}`;
+          
+          // Crear el dispositivo
+          const newDevice = await storage.createDevice({
+            deviceId: deviceId,
+            name: deviceName,
+            type: 'KittyPaw Collar', // Tipo predeterminado
+            status: 'offline',       // Estado inicial
+            batteryLevel: 100,       // Nivel de batería inicial
+            ipAddress: null          // Sin dirección IP inicial
+          });
+          
+          console.log("Nuevo dispositivo creado:", newDevice);
+          
+          // Suscribirnos al tópico del nuevo dispositivo
+          mqttClient.addTopic(deviceId);
+          log(`Auto-subscribing to new device topic: ${deviceId}`, 'express');
+        }
+      }
+      
       // Crear un objeto con fechas procesadas adecuadamente
       const petToCreate = {
         ...petData,
@@ -620,18 +651,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasVaccinations: petData.hasVaccinations === true || petData.hasVaccinations === 'true',
         hasDiseases: petData.hasDiseases === true || petData.hasDiseases === 'true',
         // Asegurarnos de que el ID del propietario sea un número
-        ownerId: typeof petData.ownerId === 'string' ? parseInt(petData.ownerId) : petData.ownerId
+        ownerId: typeof petData.ownerId === 'string' ? parseInt(petData.ownerId) : petData.ownerId,
+        // Si el dispositivo está vacío, establecerlo como null
+        kittyPawDeviceId: deviceId || null
       };
       
       console.log("Datos de mascota procesados:", petToCreate);
       const newPet = await storage.createPet(petToCreate);
       console.log("Nueva mascota creada:", newPet);
-      
-      // Si la mascota tiene un dispositivo KittyPaw asociado, suscribirnos al topic
-      if (newPet.kittyPawDeviceId) {
-        mqttClient.addTopic(newPet.kittyPawDeviceId);
-        log(`Auto-subscribing to pet's KittyPaw device topic: ${newPet.kittyPawDeviceId}`, 'express');
-      }
       
       // Asegurarse de que estamos enviando los encabezados correctos
       res.setHeader('Content-Type', 'application/json');
@@ -639,7 +666,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Respuesta enviada al cliente:", JSON.stringify(newPet));
     } catch (error) {
       console.error('Error creating pet:', error);
-      res.status(500).json({ message: 'Error al crear la mascota' });
+      
+      // Proporcionar un mensaje de error más descriptivo
+      let errorMessage = 'Error al crear la mascota';
+      
+      // Intentar extraer detalles útiles del error para el cliente
+      if (error instanceof Error) {
+        // Verificar si es un error de PostgreSQL con detalles
+        const pgError = error as any;
+        if (pgError.detail) {
+          // Proporcionar un mensaje más amigable basado en el error específico
+          if (pgError.code === '23503' && pgError.constraint === 'pets_kitty_paw_device_id_fkey') {
+            errorMessage = `El dispositivo especificado no existe. Por favor, crea primero el dispositivo o deja el campo en blanco.`;
+          } 
+          else if (pgError.code === '23503' && pgError.constraint === 'pets_owner_id_fkey') {
+            errorMessage = `El propietario especificado no existe. Por favor, selecciona un propietario válido.`;
+          }
+          else if (pgError.code === '23505') {
+            errorMessage = `Ya existe una mascota con ese número de chip. Por favor, usa un número de chip único.`;
+          }
+        }
+      }
+      
+      res.status(500).json({ message: errorMessage });
     }
   });
 
@@ -666,6 +715,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
+      // Verificar y crear el dispositivo si no existe
+      let deviceId = petData.kittyPawDeviceId;
+      if (deviceId) {
+        // Verificar si el dispositivo existe
+        const existingDevice = await storage.getDeviceByDeviceId(deviceId);
+        
+        if (!existingDevice) {
+          // El dispositivo no existe, vamos a crearlo
+          log(`Dispositivo ${deviceId} no encontrado, creando uno nuevo...`, 'express');
+          
+          // Obtener nombre de mascota o usar un valor predeterminado
+          const deviceName = petData.name ? 
+            `Dispositivo para ${petData.name}` : 
+            `Dispositivo ${deviceId}`;
+          
+          // Crear el dispositivo
+          const newDevice = await storage.createDevice({
+            deviceId: deviceId,
+            name: deviceName,
+            type: 'KittyPaw Collar', // Tipo predeterminado
+            status: 'offline',       // Estado inicial
+            batteryLevel: 100,       // Nivel de batería inicial
+            ipAddress: null          // Sin dirección IP inicial
+          });
+          
+          console.log("Nuevo dispositivo creado para actualización:", newDevice);
+          
+          // Suscribirnos al tópico del nuevo dispositivo
+          mqttClient.addTopic(deviceId);
+          log(`Auto-subscribing to new device topic: ${deviceId}`, 'express');
+        }
+      }
+      
       // Crear un objeto con fechas procesadas adecuadamente
       const petToUpdate = {
         ...petData,
@@ -683,6 +765,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Asegurarnos de que el ID del propietario sea un número si está presente
         ...(petData.ownerId && { 
           ownerId: typeof petData.ownerId === 'string' ? parseInt(petData.ownerId) : petData.ownerId
+        }),
+        // Asegurar que kittyPawDeviceId sea null si no se proporciona
+        ...(petData.kittyPawDeviceId !== undefined && { 
+          kittyPawDeviceId: petData.kittyPawDeviceId || null 
         })
       };
       
@@ -691,7 +777,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedPet);
     } catch (error) {
       console.error('Error updating pet:', error);
-      res.status(500).json({ message: 'Error al actualizar la mascota' });
+      
+      // Proporcionar un mensaje de error más descriptivo
+      let errorMessage = 'Error al actualizar la mascota';
+      
+      // Intentar extraer detalles útiles del error para el cliente
+      if (error instanceof Error) {
+        // Verificar si es un error de PostgreSQL con detalles
+        const pgError = error as any;
+        if (pgError.detail) {
+          // Proporcionar un mensaje más amigable basado en el error específico
+          if (pgError.code === '23503' && pgError.constraint === 'pets_kitty_paw_device_id_fkey') {
+            errorMessage = `El dispositivo especificado no existe. Por favor, crea primero el dispositivo o deja el campo en blanco.`;
+          } 
+          else if (pgError.code === '23503' && pgError.constraint === 'pets_owner_id_fkey') {
+            errorMessage = `El propietario especificado no existe. Por favor, selecciona un propietario válido.`;
+          }
+          else if (pgError.code === '23505') {
+            errorMessage = `Ya existe una mascota con ese número de chip. Por favor, usa un número de chip único.`;
+          }
+        }
+      }
+      
+      res.status(500).json({ message: errorMessage });
     }
   });
 
