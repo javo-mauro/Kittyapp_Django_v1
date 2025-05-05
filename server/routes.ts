@@ -590,9 +590,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/pets', async (req: Request, res: Response) => {
     try {
-      const pet = req.body;
-      console.log("Datos de mascota recibidos:", pet);
-      const newPet = await storage.createPet(pet);
+      const petData = req.body;
+      console.log("Datos de mascota recibidos:", petData);
+      
+      // Función para procesar las fechas
+      const processDate = (dateString: string | Date | null | undefined): Date | null => {
+        if (!dateString) return null;
+        
+        try {
+          // Si es cadena, convertir a objeto Date
+          if (typeof dateString === 'string') {
+            return new Date(dateString);
+          }
+          // Si ya es un objeto Date, usarlo directamente
+          return dateString as Date;
+        } catch (err) {
+          console.error("Error procesando fecha:", err);
+          return null;
+        }
+      };
+      
+      // Crear un objeto con fechas procesadas adecuadamente
+      const petToCreate = {
+        ...petData,
+        acquisitionDate: processDate(petData.acquisitionDate) || new Date(),
+        birthDate: processDate(petData.birthDate),
+        lastVetVisit: processDate(petData.lastVetVisit),
+        // Asegurarnos de que los booleanos sean correctos
+        hasVaccinations: petData.hasVaccinations === true || petData.hasVaccinations === 'true',
+        hasDiseases: petData.hasDiseases === true || petData.hasDiseases === 'true',
+        // Asegurarnos de que el ID del propietario sea un número
+        ownerId: typeof petData.ownerId === 'string' ? parseInt(petData.ownerId) : petData.ownerId
+      };
+      
+      console.log("Datos de mascota procesados:", petToCreate);
+      const newPet = await storage.createPet(petToCreate);
       console.log("Nueva mascota creada:", newPet);
       
       // Si la mascota tiene un dispositivo KittyPaw asociado, suscribirnos al topic
@@ -614,8 +646,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/pets/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const pet = req.body;
-      const updatedPet = await storage.updatePet(id, pet);
+      const petData = req.body;
+      console.log("Datos de actualización de mascota recibidos:", petData);
+      
+      // Función para procesar las fechas
+      const processDate = (dateString: string | Date | null | undefined): Date | null => {
+        if (!dateString) return null;
+        
+        try {
+          // Si es cadena, convertir a objeto Date
+          if (typeof dateString === 'string') {
+            return new Date(dateString);
+          }
+          // Si ya es un objeto Date, usarlo directamente
+          return dateString as Date;
+        } catch (err) {
+          console.error("Error procesando fecha:", err);
+          return null;
+        }
+      };
+      
+      // Crear un objeto con fechas procesadas adecuadamente
+      const petToUpdate = {
+        ...petData,
+        // Solo procesar las fechas que estén presentes en los datos
+        ...(petData.acquisitionDate && { acquisitionDate: processDate(petData.acquisitionDate) }),
+        ...(petData.birthDate && { birthDate: processDate(petData.birthDate) }),
+        ...(petData.lastVetVisit && { lastVetVisit: processDate(petData.lastVetVisit) }),
+        // Procesar booleanos solo si están presentes
+        ...(petData.hasVaccinations !== undefined && { 
+          hasVaccinations: petData.hasVaccinations === true || petData.hasVaccinations === 'true'
+        }),
+        ...(petData.hasDiseases !== undefined && { 
+          hasDiseases: petData.hasDiseases === true || petData.hasDiseases === 'true'
+        }),
+        // Asegurarnos de que el ID del propietario sea un número si está presente
+        ...(petData.ownerId && { 
+          ownerId: typeof petData.ownerId === 'string' ? parseInt(petData.ownerId) : petData.ownerId
+        })
+      };
+      
+      console.log("Datos de mascota procesados para actualización:", petToUpdate);
+      const updatedPet = await storage.updatePet(id, petToUpdate);
       res.json(updatedPet);
     } catch (error) {
       console.error('Error updating pet:', error);
