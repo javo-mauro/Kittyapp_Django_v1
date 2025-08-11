@@ -92,11 +92,14 @@ CHANNEL_LAYERS = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('PGDATABASE'),
-        'USER': os.environ.get('PGUSER'),
-        'PASSWORD': os.environ.get('PGPASSWORD'),
-        'HOST': os.environ.get('PGHOST'),
-        'PORT': os.environ.get('PGPORT'),
+        'NAME': os.environ.get('PGDATABASE', 'neondb'),
+        'USER': os.environ.get('PGUSER', 'neondb_owner'),
+        'PASSWORD': os.environ.get('PGPASSWORD', 'npg_haLf64lsGvBr'),
+        'HOST': os.environ.get('PGHOST', 'ep-royal-voice-a4nxjivp.us-east-1.aws.neon.tech'),
+        'PORT': os.environ.get('PGPORT', '5432'),
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
     }
 }
 
