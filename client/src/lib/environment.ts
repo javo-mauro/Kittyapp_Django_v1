@@ -7,21 +7,13 @@ export function isCapacitor(): boolean {
 }
 
 export function getReplitUrl(): string {
-  // Try different Replit URL patterns until we find one that works
-  // You can manually update this with your working Replit URL
+  // NGROK CONFIGURATION
+  // Replace with your ngrok HTTPS URL when using ngrok
+  // Example: return 'https://abc123def.ngrok.io';
   
-  // Option 1: Standard repl.co format (most common)
-  // return 'https://workspace.javomaurocontac.repl.co';
-  
-  // Option 2: ID-based format
-  // return 'https://77937811-d0d0-4656-91b0-2874ad48ebed.id.repl.co';
-  
-  // Option 3: App format (newer replits)
-  // return 'https://workspace--javomaurocontac.repl.app';
-  
-  // TEMPORARY SOLUTION: For now, use localhost when in Capacitor
-  // This requires you to run the app in development mode when testing the APK
-  return 'http://localhost:5000';
+  // IMPORTANTE: Cambia esta URL por tu URL de ngrok HTTPS
+  // Ejemplo: https://12345abc.ngrok.io
+  return 'https://REPLACE-WITH-YOUR-NGROK-URL.ngrok.io';
 }
 
 export function getApiBaseUrl(): string {
@@ -33,9 +25,10 @@ export function getApiBaseUrl(): string {
 
 export function getWebSocketUrl(): string {
   if (isCapacitor()) {
-    // TEMPORARY: Use localhost WebSocket for testing
-    // You'll need to use an external service or tunneling solution like ngrok
-    return 'ws://localhost:5000/ws';
+    // NGROK WEBSOCKET - Usar HTTPS de ngrok convertido a WSS
+    // IMPORTANTE: Cambia esta URL por tu URL de ngrok WSS
+    // Ejemplo: wss://12345abc.ngrok.io/ws
+    return 'wss://REPLACE-WITH-YOUR-NGROK-URL.ngrok.io/ws';
   }
   
   // For web browser - check if we're in development or production

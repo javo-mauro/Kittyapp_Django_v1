@@ -371,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Log detallado del error
         console.error("Error de servidor:", error);
-        res.status(500).json({ message: 'Error al crear el dispositivo. Detalles: ' + (error.message || 'Error desconocido') });
+        res.status(500).json({ message: 'Error al crear el dispositivo. Detalles: ' + (error instanceof Error ? error.message : 'Error desconocido') });
       }
     }
   });
