@@ -5,8 +5,8 @@ const config: CapacitorConfig = {
   appName: 'KittyPaw Sensors',
   webDir: 'dist/public',
   server: {
-    // Para desarrollo local, apunta al servidor Replit
-    url: process.env.NODE_ENV === 'development' ? 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co' : undefined,
+    // Para aplicación móvil, apunta al servidor Replit
+    url: 'https://workspace--javomaurocontac.repl.app',
     cleartext: false
   },
   android: {

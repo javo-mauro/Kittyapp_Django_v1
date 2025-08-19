@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getApiBaseUrl } from './environment';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -12,9 +13,7 @@ export async function apiRequest<T>(
   options?: RequestInit
 ): Promise<T> {
   // Determine the base URL based on the environment
-  const baseUrl = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
-    ? 'https://' + (process.env.REPL_SLUG || 'your-repl') + '.' + (process.env.REPL_OWNER || 'your-username') + '.repl.co/api'
-    : '/api'; // Default for web or other environments
+  const baseUrl = getApiBaseUrl();
 
   const fullUrl = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
@@ -62,9 +61,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     // Determine the base URL for queryFn as well
-    const baseUrl = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
-      ? 'https://' + (process.env.REPL_SLUG || 'your-repl') + '.' + (process.env.REPL_OWNER || 'your-username') + '.repl.co/api'
-      : '/api'; // Default for web or other environments
+    const baseUrl = getApiBaseUrl();
 
     const url = queryKey[0] as string;
     const fullUrl = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;

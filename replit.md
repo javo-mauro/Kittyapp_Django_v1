@@ -129,3 +129,14 @@ npm start
 - Static file serving configuration
 
 The system is designed to run on platforms like Replit with automatic environment detection and WebSocket proxy support for development.
+
+## Recent Updates (January 2025)
+
+### Mobile App Configuration
+- **APK Generation Ready**: Added Capacitor Android configuration for mobile app deployment
+- **URL Configuration**: Configured correct Replit URLs for mobile app connectivity
+  - Web URL: `https://workspace--javomaurocontac.repl.app`
+  - WebSocket: `wss://workspace--javomaurocontac.repl.app/ws`
+  - API Base: `https://workspace--javomaurocontac.repl.app/api`
+- **Environment Detection**: Created `client/src/lib/environment.ts` for robust mobile/web detection
+- **Mobile Connectivity**: WebSocket and API clients automatically detect Capacitor environment
