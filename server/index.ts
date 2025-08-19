@@ -64,11 +64,15 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
+  
+  // Use localhost for Windows compatibility, 0.0.0.0 for production/Replit
+  const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
+  
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host,
+    reusePort: process.platform !== 'win32', // Windows doesn't support reusePort
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on ${host}:${port}`);
   });
 })();
