@@ -1,0 +1,81 @@
+(base) PS D:\APP Pruebas> git clone https://github.com/javo-mauro/Kittyapp_Django_v1.git
+Cloning into 'Kittyapp_Django_v1'...
+remote: Enumerating objects: 1018, done.
+remote: Counting objects: 100% (1018/1018), done.
+remote: Compressing objects: 100% (355/355), done.
+remote: Total 1018 (delta 619), reused 1013 (delta 614), pack-reused 0 (from 0)
+Receiving objects:  96% (978/1018), 1.76 MiB | 2.99 MiB/s
+Receiving objects: 100% (1018/1018), 3.27 MiB | 4.73 MiB/s, done.
+Resolving deltas: 100% (619/619), done.
+(base) PS D:\APP Pruebas> cd Kittyapp_Django_v1
+(base) PS D:\APP Pruebas\Kittyapp_Django_v1> pip install -r requirements.txt
+
+[notice] A new release of pip is available: 25.1.1 -> 25.2
+[notice] To update, run: python.exe -m pip install --upgrade pip
+ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'requirements.txt'
+(base) PS D:\APP Pruebas\Kittyapp_Django_v1> 
+ *  Historial restaurado 
+
+(base) PS D:\APP Pruebas> git clone https://github.com/javo-mauro/Kittyapp_Django_v1.git
+fatal: destination path 'Kittyapp_Django_v1' already exists and is not an empty directory.
+(base) PS D:\APP Pruebas> git clone https://github.com/javo-mauro/Kittyapp_Django_v1.git
+Cloning into 'Kittyapp_Django_v1'...
+remote: Enumerating objects: 1042, done.
+remote: Counting objects: 100% (1042/1042), done.
+remote: Compressing objects: 100% (363/363), done.
+remote: Total 1042 (delta 638), reused 1034 (delta 630), pack-reused 0 (from 0)Receiving objects:  96% (1001/1042), 2.21Receiving objects: 100% (1042/1042), 2.21 MiB | 3.74 MiB/s
+Receiving objects: 100% (1042/1042), 3.27 MiB | 4.27 MiB/s, done.
+Resolving deltas: 100% (638/638), done.
+(base) PS D:\APP Pruebas> $env:DATABASE_URL = "postgresql://neondb_owner:npg_haLf64lsGvBr@ep-royal-voice-a4nxjivp.us-east-1.aws.neon.tech/neondb?sslmode=require"
+>> $env:PGDATABASE = "neondb"
+>> $env:PGHOST = "ep-royal-voice-a4nxjivp.us-east-1.aws.neon.tech"
+>> $env:PGPORT = "5432"
+>> $env:PGUSER = "neondb_owner"
+>> $env:PGPASSWORD = "npg_haLf64lsGvBr"
+>> $env:NODE_ENV = "development"
+>> npm run dev
+npm error code ENOENT
+npm error syscall open
+npm error path D:\APP Pruebas\package.json
+npm error errno -4058
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open 'D:\APP Pruebas\package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: C:\Users\Usuario\AppData\Local\npm-cache\_logs\2025-08-19T02_56_31_019Z-debug-0.log
+(base) PS D:\APP Pruebas> npm install                                                                                   
+npm error code ENOENT
+npm error syscall open
+npm error path D:\APP Pruebas\package.json
+npm error errno -4058
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open 'D:\APP Pruebas\package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: C:\Users\Usuario\AppData\Local\npm-cache\_logs\2025-08-19T02_56_44_775Z-debug-0.log
+(base) PS D:\APP Pruebas> npm install dotenv                                                                            
+
+added 1 package in 956ms
+
+1 package is looking for funding
+  run `npm fund` for details
+(base) PS D:\APP Pruebas> npm install       
+
+up to date, audited 2 packages in 1s
+
+1 package is looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+(base) PS D:\APP Pruebas> $env:DATABASE_URL = "postgresql://neondb_owner:npg_haLf64lsGvBr@ep-royal-voice-a4nxjivp.us-east-1.aws.neon.tech/neondb?sslmode=require"
+>> $env:PGDATABASE = "neondb"
+>> $env:PGHOST = "ep-royal-voice-a4nxjivp.us-east-1.aws.neon.tech"
+>> $env:PGPORT = "5432"
+>> $env:PGUSER = "neondb_owner"
+>> $env:PGPASSWORD = "npg_haLf64lsGvBr"
+>> $env:NODE_ENV = "development"
+>> npm run dev
+npm error Missing script: "dev"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: C:\Users\Usuario\AppData\Local\npm-cache\_logs\2025-08-19T02_57_19_522Z-debug-0.log
+(base) PS D:\APP Pruebas> 
