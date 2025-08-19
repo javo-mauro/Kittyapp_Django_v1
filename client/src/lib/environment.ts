@@ -26,9 +26,9 @@ export function getReplitUrl(): string {
 
 export function getApiBaseUrl(): string {
   if (isCapacitor()) {
-    return `${getReplitUrl()}/api`;
+    return `${getReplitUrl()}`;
   }
-  return '/api'; // Default for web or development
+  return ''; // Default for web or development - no prefix needed
 }
 
 export function getWebSocketUrl(): string {
@@ -38,7 +38,7 @@ export function getWebSocketUrl(): string {
     return 'ws://localhost:5000/ws';
   }
   
-  // For web browser
+  // For web browser - check if we're in development or production
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/ws`;
 }
