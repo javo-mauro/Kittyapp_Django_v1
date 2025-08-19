@@ -11,6 +11,13 @@ export async function apiRequest<T>(
   url: string,
   options?: RequestInit
 ): Promise<T> {
+  // Determine the base URL based on the environment
+  const baseUrl = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
+    ? 'https://your-repl-name.your-username.replit.dev/api' // Replace with your Replit deployment URL
+    : '/api'; // Default for web or other environments
+
+  const fullUrl = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+
   const requestInit: RequestInit = {
     ...options,
     headers: {
@@ -22,17 +29,17 @@ export async function apiRequest<T>(
   };
 
   try {
-    console.log(`Enviando solicitud a ${url}`, requestInit);
-    const res = await fetch(url, requestInit);
-    
+    console.log(`Enviando solicitud a ${fullUrl}`, requestInit);
+    const res = await fetch(fullUrl, requestInit);
+
     await throwIfResNotOk(res);
-    
+
     // Para respuestas vacías (por ejemplo, 204 No Content)
     if (res.status === 204) {
       console.log("Respuesta vacía (204 No Content)");
       return {} as unknown as T;
     }
-    
+
     try {
       const data = await res.json();
       console.log("Respuesta JSON recibida:", data);
@@ -54,7 +61,15 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Determine the base URL for queryFn as well
+    const baseUrl = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
+      ? 'https://your-repl-name.your-username.replit.dev/api' // Replace with your Replit deployment URL
+      : '/api'; // Default for web or other environments
+
+    const url = queryKey[0] as string;
+    const fullUrl = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 

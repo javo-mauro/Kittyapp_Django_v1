@@ -36,7 +36,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [latestReadings, setLatestReadings] = useState<any[]>([]);
-  
+
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -51,9 +51,19 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       reconnectTimeoutRef.current = null;
     }
 
+    // Connect to WebSocket server - handle both development and mobile app
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
+    let wsUrl: string;
+
+    // Detect if running in Capacitor (mobile app)
+    if (window.location.protocol === 'capacitor:') {
+      // In production mobile app, connect to your deployed repl
+      wsUrl = 'wss://your-repl-name.your-username.replit.dev/ws';
+    } else {
+      // In web browser or development
+      wsUrl = `${protocol}//${window.location.host}/ws`;
+    }
+
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -67,7 +77,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     ws.onclose = () => {
       setConnected(false);
-      
+
       // Attempt to reconnect after a delay
       reconnectTimeoutRef.current = setTimeout(() => {
         initWebSocket();
@@ -101,23 +111,23 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setMqttBroker(message.broker);
         }
         break;
-      
+
       case 'system_metrics':
         setSystemMetrics(message.metrics);
         break;
-      
+
       case 'system_info':
         setSystemInfo(message.info);
         break;
-      
+
       case 'devices':
         setDevices(message.devices);
         break;
-      
+
       case 'latest_readings':
         setLatestReadings(message.readings);
         break;
-      
+
       case 'sensor_data':
         // Update the latest readings with new data
         setLatestReadings(prevReadings => {
@@ -128,16 +138,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             unit: message.data.unit,
             timestamp: message.timestamp
           };
-          
+
           // Remove old reading for the same device and sensor type
           const filteredReadings = prevReadings.filter(
             r => !(r.deviceId === message.deviceId && r.sensorType === message.sensorType)
           );
-          
+
           return [...filteredReadings, newReading];
         });
         break;
-        
+
       case 'device_status_update':
         // Actualizar el estado de un dispositivo específico
         setDevices(prevDevices => {
@@ -153,7 +163,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             return device;
           });
         });
-        
+
         // Mostrar notificación si el dispositivo cambia a offline
         if (message.status === 'offline') {
           toast({
@@ -170,7 +180,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           });
         }
         break;
-      
+
       default:
         console.log('Unknown message type:', message.type);
     }
@@ -187,31 +197,31 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
     }
   };
-  
+
   // Función para obtener dispositivos filtrados por usuario
   const fetchUserDevices = useCallback(async (userId?: number, username?: string) => {
     try {
       // Construir la URL con parámetros de consulta si se proporcionan
       let url = '/api/devices';
       const params = new URLSearchParams();
-      
+
       if (userId) {
         params.append('userId', userId.toString());
       }
-      
+
       if (username) {
         params.append('username', username);
       }
-      
+
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
-      
+
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch devices');
       }
-      
+
       const userDevices = await response.json();
       setDevices(userDevices);
     } catch (error) {
@@ -232,7 +242,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         wsRef.current.close();
         wsRef.current = null;
       }
-      
+
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
