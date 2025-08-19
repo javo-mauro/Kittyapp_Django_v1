@@ -13,7 +13,7 @@ export function getReplitUrl(): string {
   
   // IMPORTANTE: Cambia esta URL por tu URL de ngrok HTTPS
   // Ejemplo: https://12345abc.ngrok.io
-  return 'https://REPLACE-WITH-YOUR-NGROK-URL.ngrok.io';
+  return 'https://cb2f8d314cbf.ngrok-free.app';
 }
 
 export function getApiBaseUrl(): string {
@@ -28,7 +28,7 @@ export function getWebSocketUrl(): string {
     // NGROK WEBSOCKET - Usar HTTPS de ngrok convertido a WSS
     // IMPORTANTE: Cambia esta URL por tu URL de ngrok WSS
     // Ejemplo: wss://12345abc.ngrok.io/ws
-    return 'wss://REPLACE-WITH-YOUR-NGROK-URL.ngrok.io/ws';
+    return 'wss://cb2f8d314cbf.ngrok-free.app/ws';
   }
   
   // For web browser - check if we're in development or production
