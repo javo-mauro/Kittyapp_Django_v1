@@ -58,7 +58,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Detect if running in Capacitor (mobile app)
     if (window.location.protocol === 'capacitor:') {
       // In production mobile app, connect to your deployed repl
-      wsUrl = 'wss://your-repl-name.your-username.replit.dev/ws';
+      // Replace with your actual repl URL when you deploy
+      wsUrl = 'wss://' + (process.env.REPL_SLUG || 'your-repl') + '.' + (process.env.REPL_OWNER || 'your-username') + '.repl.co/ws';
     } else {
       // In web browser or development
       wsUrl = `${protocol}//${window.location.host}/ws`;

@@ -13,7 +13,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   // Determine the base URL based on the environment
   const baseUrl = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
-    ? 'https://your-repl-name.your-username.replit.dev/api' // Replace with your Replit deployment URL
+    ? 'https://' + (process.env.REPL_SLUG || 'your-repl') + '.' + (process.env.REPL_OWNER || 'your-username') + '.repl.co/api'
     : '/api'; // Default for web or other environments
 
   const fullUrl = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
@@ -63,7 +63,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     // Determine the base URL for queryFn as well
     const baseUrl = typeof window !== 'undefined' && window.location.protocol === 'capacitor:'
-      ? 'https://your-repl-name.your-username.replit.dev/api' // Replace with your Replit deployment URL
+      ? 'https://' + (process.env.REPL_SLUG || 'your-repl') + '.' + (process.env.REPL_OWNER || 'your-username') + '.repl.co/api'
       : '/api'; // Default for web or other environments
 
     const url = queryKey[0] as string;
