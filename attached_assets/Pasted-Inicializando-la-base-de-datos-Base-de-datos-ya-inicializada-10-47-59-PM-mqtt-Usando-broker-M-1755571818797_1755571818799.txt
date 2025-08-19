@@ -1,0 +1,72 @@
+Inicializando la base de datos...
+Base de datos ya inicializada
+10:47:59 PM [mqtt] Usando broker MQTT público para pruebas en lugar de AWS IoT
+10:47:59 PM [mqtt] Connecting to MQTT broker: mqtt://broker.emqx.io:1883
+10:47:59 PM [mqtt] Formateando tópico como KPCL0021/pub para asegurar el formato correcto
+10:47:59 PM [mqtt] Formateando tópico como KPCL0022/pub para asegurar el formato correcto
+10:47:59 PM [mqtt] Added new topic: KPCL0022/pub
+10:47:59 PM [mqtt] Started offline detection timer
+node:events:496
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen ENOTSUP: operation not supported on socket 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Emitted 'error' event on WebSocketServer instance at:
+    at Server.emit (node:events:518:28)
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'ENOTSUP',
+  errno: -4049,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+
+Node.js v22.17.0
+(base) PS D:\APP Pruebas\Kittyapp_Django_v1> $env:DATABASE_URL = "postgresql://neondb_owner:npg_haLf64lsGvBr@ep-royal-voice-a4nxjivp.us-east-1.aws.neon.tech/neondb?sslmode=require"
+>> $env:PGDATABASE = "neondb"
+>> $env:PGHOST = "ep-royal-voice-a4nxjivp.us-east-1.aws.neon.tech"
+>> $env:PGPORT = "5432"
+>> $env:PGUSER = "neondb_owner"
+>> $env:PGPASSWORD = "npg_haLf64lsGvBr"
+>> $env:NODE_ENV = "development"
+>> npm run dev
+
+> rest-express@1.0.0 dev
+> tsx server/index.ts
+
+Inicializando la base de datos...
+Base de datos ya inicializada
+10:49:26 PM [mqtt] Usando broker MQTT público para pruebas en lugar de AWS IoT
+10:49:26 PM [mqtt] Connecting to MQTT broker: mqtt://broker.emqx.io:1883
+10:49:26 PM [mqtt] Formateando tópico como KPCL0021/pub para asegurar el formato correcto
+10:49:26 PM [mqtt] Formateando tópico como KPCL0022/pub para asegurar el formato correcto
+10:49:26 PM [mqtt] Added new topic: KPCL0022/pub
+10:49:26 PM [mqtt] Started offline detection timer
+10:49:26 PM [mqtt] Connected to MQTT broker
+node:events:496
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen ENOTSUP: operation not supported on socket 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Emitted 'error' event on WebSocketServer instance at:
+    at Server.emit (node:events:518:28)
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'ENOTSUP',
+  errno: -4049,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+
+Node.js v22.17.0
+(base) PS D:\APP Pruebas\Kittyapp_Django_v1>
