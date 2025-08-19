@@ -7,9 +7,21 @@ export function isCapacitor(): boolean {
 }
 
 export function getReplitUrl(): string {
-  // Return the actual public URL of your Replit
-  // This will be accessible from mobile devices
-  return 'https://workspace--javomaurocontac.repl.app';
+  // Try different Replit URL patterns until we find one that works
+  // You can manually update this with your working Replit URL
+  
+  // Option 1: Standard repl.co format (most common)
+  // return 'https://workspace.javomaurocontac.repl.co';
+  
+  // Option 2: ID-based format
+  // return 'https://77937811-d0d0-4656-91b0-2874ad48ebed.id.repl.co';
+  
+  // Option 3: App format (newer replits)
+  // return 'https://workspace--javomaurocontac.repl.app';
+  
+  // TEMPORARY SOLUTION: For now, use localhost when in Capacitor
+  // This requires you to run the app in development mode when testing the APK
+  return 'http://localhost:5000';
 }
 
 export function getApiBaseUrl(): string {
@@ -21,7 +33,9 @@ export function getApiBaseUrl(): string {
 
 export function getWebSocketUrl(): string {
   if (isCapacitor()) {
-    return `wss://workspace--javomaurocontac.repl.app/ws`;
+    // TEMPORARY: Use localhost WebSocket for testing
+    // You'll need to use an external service or tunneling solution like ngrok
+    return 'ws://localhost:5000/ws';
   }
   
   // For web browser
