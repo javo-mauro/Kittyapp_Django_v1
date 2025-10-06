@@ -1,37 +1,21 @@
-// Environment detection and URL configuration for Capacitor/Mobile apps
-
 export function isCapacitor(): boolean {
-  return typeof window !== 'undefined' && 
-    (window.location.protocol === 'capacitor:' || 
-     (window as any).Capacitor !== undefined);
-}
-
-export function getReplitUrl(): string {
-  // NGROK CONFIGURATION
-  // Replace with your ngrok HTTPS URL when using ngrok
-  // Example: return 'https://abc123def.ngrok.io';
-  
-  // IMPORTANTE: Cambia esta URL por tu URL de ngrok HTTPS
-  // Ejemplo: https://12345abc.ngrok.io
-  return 'https://REPLACE-WITH-YOUR-NGROK-URL.ngrok.io';
+  return typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
 }
 
 export function getApiBaseUrl(): string {
   if (isCapacitor()) {
-    return `${getReplitUrl()}`;
+    // Usa la variable de entorno definida en .env.android
+    return import.meta.env.VITE_API_URL || 'http://localhost:5000';
   }
-  return ''; // Default for web or development - no prefix needed
+  return ''; // Para web
 }
 
 export function getWebSocketUrl(): string {
   if (isCapacitor()) {
-    // NGROK WEBSOCKET - Usar HTTPS de ngrok convertido a WSS
-    // IMPORTANTE: Cambia esta URL por tu URL de ngrok WSS
-    // Ejemplo: wss://12345abc.ngrok.io/ws
-    return 'wss://REPLACE-WITH-YOUR-NGROK-URL.ngrok.io/ws';
+    // Usa la variable de entorno definida en .env.android
+    return import.meta.env.VITE_WS_URL || 'ws://localhost:5000/ws';
   }
-  
-  // For web browser - check if we're in development or production
+
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/ws`;
 }
